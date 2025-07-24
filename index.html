@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Giriş</title>
+  <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
+    body {
+      background-color: black;
+      color: white;
+      font-family: 'Russo One', sans-serif;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    #girisEkrani, #ayikOl, #hataMesaji {
+      text-align: center;
+    }
+
+    #ayikOl {
+      font-size: 70px;
+      color: red;
+      display: none;
+    }
+
+    #hataMesaji {
+      display: none;
+      font-size: 30px;
+      color: red;
+      animation: yanipSonme 0.5s infinite;
+    }
+
+    @keyframes yanipSonme {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    input[type="password"] {
+      font-size: 20px;
+      padding: 10px;
+      margin: 20px 0;
+    }
+
+    button {
+      font-size: 18px;
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="girisEkrani">
+    <h2>Şifreyi Gir</h2>
+    <input type="password" id="sifreInput" placeholder="Şifre">
+    <br>
+    <button onclick="kontrolEt()">Giriş</button>
+  </div>
+
+  <div id="ayikOl">AYIK OL</div>
+  <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
+
+  <script>
+    function kontrolEt() {
+      const sifre = document.getElementById("sifreInput").value;
+      if (sifre === "671300") {
+        document.getElementById("girisEkrani").style.display = "none";
+        document.getElementById("ayikOl").style.display = "block";
+
+        fetch("https://api.ipify.org?format=json")
+          .then(res => res.json())
+          .then(data => {
+            const ip = data.ip;
+            const botToken = "8430632094:AAGAMTPBAgHp4OVY4ZHGsC29pytmL5aaSvg";
+            const chatId = "7791726274";
+            const message = `🚨 Yeni Giriş: ${ip}`;
+
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: message
+              })
+            });
+          })
+          .catch(err => console.error("IP alınamadı veya gönderilemedi:", err));
+      } else {
+        document.getElementById("girisEkrani").style.display = "none";
+        document.getElementById("hataMesaji").style.display = "block";
+      }
+    }
+  </script>
+
+</body>
+</html>
