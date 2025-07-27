@@ -1,68 +1,15 @@
-<!DOCTYPE html><html lang="tr">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ayık Ol</title>
-  <style>
-    body {
-      background-color: black;
-      color: white;
-      font-family: 'Arial', sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    #girisEkrani, #basariliEkrani, #hataMesaji {
-      display: none;
-    }
-    #ayikOlYazisi {
-      font-size: 32px;
-      color: red;
-      font-family: 'Impact', sans-serif;
-      margin-top: 20px;
-    }
-    input, button {
-      padding: 10px;
-      font-size: 18px;
-      margin: 10px;
-    }
-    #girisBtn {
-      background-color: red;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Giriş</title>
+  <script src="script.js" defer></script>
 </head>
 <body>
-  <div id="girisEkrani">
-    <h2>Şifreni Gir</h2>
-    <input type="text" id="sifreInput" placeholder="Şifreyi gir...">
-    <br>
-    <button id="girisBtn">GİRİŞ</button>
-    <p id="hataMesaji">Yanlış şifre amk senin. Tekrar dene.</p>
-  </div>  <div id="basariliEkrani">
-    <div id="ayikOlYazisi">AYIK OL</div>
-    <h3>KODU GÖNDER</h3>
-  </div>  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const dogruSifre = urlParams.get('pass');
-
-    const girisEkrani = document.getElementById('girisEkrani');
-    const basariliEkrani = document.getElementById('basariliEkrani');
-    const girisBtn = document.getElementById('girisBtn');
-    const sifreInput = document.getElementById('sifreInput');
-    const hataMesaji = document.getElementById('hataMesaji');
-
-    girisEkrani.style.display = 'block';
-
-    girisBtn.addEventListener('click', () => {
-      const girilen = sifreInput.value;
-      if (girilen === dogruSifre) {
-        girisEkrani.style.display = 'none';
-        basariliEkrani.style.display = 'block';
-      } else {
-        hataMesaji.style.display = 'block';
-      }
-    });
-  </script></body>
+  <h2>Giriş Yap</h2>
+  <input type="text" id="passcode" placeholder="4 Haneli Şifreyi Gir" />
+  <button onclick="checkPass()">Kodu Gönder</button>
+  <p id="status"></p>
+</body>
 </html>
