@@ -1,15 +1,107 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Giriş</title>
-  <script src="script.js" defer></script>
+  <meta charset="UTF-8">
+  <title>Giriş Paneli</title>
+  <style>
+    body {
+      background: #0e0e0e;
+      color: #f1f1f1;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    h1 {
+      font-size: 3rem;
+      letter-spacing: 6px;
+      margin-bottom: 20px;
+      font-family: 'Georgia', serif;
+    }
+    input[type="password"] {
+      padding: 10px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+      margin-bottom: 15px;
+      background-color: #222;
+      color: #fff;
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1rem;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #message {
+      margin-top: 20px;
+      font-size: 1.1rem;
+      color: #ff4c4c;
+    }
+    #awake {
+      display: none;
+      font-size: 2.5rem;
+      color: #fff;
+      margin-bottom: 30px;
+      font-family: 'Courier New', Courier, monospace;
+      text-shadow: 0 0 10px #ffffff88;
+    }
+    #loading {
+      display: none;
+      font-size: 1.2rem;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Giriş Yap</h2>
-  <input type="text" id="passcode" placeholder="4 Haneli Şifreyi Gir" />
-  <button onclick="checkPass()">Kodu Gönder</button>
-  <p id="status"></p>
+  <div id="awake">AWAKE</div>
+
+  <h1>Giriş</h1>
+  <input type="password" id="password" placeholder="Şifre giriniz">
+  <button onclick="checkPassword()">Giriş Yap</button>
+  
+  <div id="message"></div>
+  <div id="loading">Yükleniyor...</div>
+
+  <script>
+    function checkPassword() {
+      const input = document.getElementById("password").value;
+      const message = document.getElementById("message");
+      const loading = document.getElementById("loading");
+      const awake = document.getElementById("awake");
+
+      if (input === "615461") {
+        document.querySelector("h1").style.display = "none";
+        document.getElementById("password").style.display = "none";
+        document.querySelector("button").style.display = "none";
+        message.innerText = "";
+        awake.style.display = "block";
+
+        setTimeout(() => {
+          loading.style.display = "block";
+          loading.innerText = "Yükleniyor...";
+
+          setTimeout(() => {
+            loading.innerText = "Gönderildi ✔";
+            // Buraya kamera tetikleme fonksiyonu yazılacak
+          }, 2000);
+        }, 800);
+      } else {
+        message.innerText = "Şifreyi bile doğru giremeyen kafasız, neyi hackliycen sen...";
+      }
+    }
+  </script>
 </body>
 </html>
