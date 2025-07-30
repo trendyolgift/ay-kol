@@ -1,8 +1,1 @@
-services:
-  - type: web
-    name: ay-kol
-    env: python
-    plan: free
-    buildCommand: ""
-    startCommand: "python bot.py"
-    repo: https://github.com/beachcumen/ay-kol
+
