@@ -8,9 +8,7 @@ from telegram.error import BadRequest
 
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
-CHANNEL_USERNAME = '@ayikolguven'
-GROUP_CHAT_ID = -100XXXXXXXXXX  # Buraya grubunun rakamsal ID'sini yazmalısın
-GROUP_INVITE_LINK = 'https://t.me/+JXS_OQzDYxcyMTJk' # Gönderdiğin davet bağlantısı
+CHANNEL_USERNAME = '@baileyssohbet'
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
 kullanicilar = {}
@@ -25,39 +23,21 @@ sureler = {
     "Sınırsız - 600 TL": {"gun": None, "fiyat": 600}
 }
 
-async def check_memberships(user_id, bot):
-    """Kullanıcının hem kanalda hem de grupta olup olmadığını kontrol eder."""
+async def check_channel_membership(user_id, bot):
     try:
-        channel_member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
-        in_channel = channel_member.status in ['member', 'creator', 'administrator']
+        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        return member.status in ['member', 'creator', 'administrator']
     except BadRequest:
-        in_channel = False
-
-    try:
-        group_member = await bot.get_chat_member(chat_id=GROUP_CHAT_ID, user_id=user_id)
-        in_group = group_member.status in ['member', 'creator', 'administrator']
-    except BadRequest:
-        in_group = False
-
-    return in_channel, in_group
+        return False
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     kullanici_adi = user.mention_html() if user.username else user.first_name
 
-    in_channel, in_group = await check_memberships(user.id, context.bot)
-
-    if not in_channel or not in_group:  
-        keyboard = []
-        if not in_channel:
-            keyboard.append([InlineKeyboardButton("Kanala Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")])
-        if not in_group:
-            keyboard.append([InlineKeyboardButton("Sohbet Grubuna Katıl", url=GROUP_INVITE_LINK)])
-            
+    if not await check_channel_membership(user.id, context.bot):  
+        keyboard = [[InlineKeyboardButton("Gruba Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")]]  
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, botu kullanabilmek ve işlemlere devam etmek için öncelikle aşağıdaki adreslere katılmalısın:\n\n"  
-            f"1. Kanalımız: <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a>\n"
-            f"2. Sohbet Grubumuz",  
+            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a> grubuna katılmalısın.",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
@@ -129,8 +109,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("Satın Al", callback_data="satinal")  
         ]]  
         await query.message.edit_text(  
-            "Ayık Ol Botunun ana menüsüne hoş geldiniz.\n"  
-            "Aşağıdaki seçenekten devam edebilirsiniz.",  
+            "Ayık Ol Botuna hoş geldiniz.\n"  
+            "Aşağıdaki menüden seçeneği seçebilirsiniz.",  
             reply_markup=InlineKeyboardMarkup(keyboard)  
         )
 
