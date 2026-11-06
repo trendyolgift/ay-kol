@@ -9,12 +9,14 @@ from telegram.error import BadRequest
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
 CHANNEL_USERNAME = '@ayikolguven'
+GROUP_CHAT_ID = -100XXXXXXXXXX  # Buraya grubunun rakamsal ID'sini yazmalısın
+GROUP_INVITE_LINK = 'https://t.me/+JXS_OQzDYxcyMTJk' # Gönderdiğin davet bağlantısı
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
 kullanicilar = {}
 kullanilmis_sifreler = set()
 
-# Paketler ve Yıldız fiyatları (istediğin gibi değiştirebilirsin)
+# Paketler ve Yıldız fiyatları
 sureler = {
     "1 Aylık - 100 TL": {"gun": 30, "fiyat": 100},
     "3 Aylık - 250 TL": {"gun": 90, "fiyat": 250},
@@ -23,21 +25,39 @@ sureler = {
     "Sınırsız - 600 TL": {"gun": None, "fiyat": 600}
 }
 
-async def check_channel_membership(user_id, bot):
+async def check_memberships(user_id, bot):
+    """Kullanıcının hem kanalda hem de grupta olup olmadığını kontrol eder."""
     try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
-        return member.status in ['member', 'creator', 'administrator']
+        channel_member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        in_channel = channel_member.status in ['member', 'creator', 'administrator']
     except BadRequest:
-        return False
+        in_channel = False
+
+    try:
+        group_member = await bot.get_chat_member(chat_id=GROUP_CHAT_ID, user_id=user_id)
+        in_group = group_member.status in ['member', 'creator', 'administrator']
+    except BadRequest:
+        in_group = False
+
+    return in_channel, in_group
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     kullanici_adi = user.mention_html() if user.username else user.first_name
 
-    if not await check_channel_membership(user.id, context.bot):  
-        keyboard = [[InlineKeyboardButton("Kanala Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")]]  
+    in_channel, in_group = await check_memberships(user.id, context.bot)
+
+    if not in_channel or not in_group:  
+        keyboard = []
+        if not in_channel:
+            keyboard.append([InlineKeyboardButton("Kanala Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")])
+        if not in_group:
+            keyboard.append([InlineKeyboardButton("Sohbet Grubuna Katıl", url=GROUP_INVITE_LINK)])
+            
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a> kanalına katılmalısın.",  
+            f"Selam {kullanici_adi}, botu kullanabilmek ve işlemlere devam etmek için öncelikle aşağıdaki adreslere katılmalısın:\n\n"  
+            f"1. Kanalımız: <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a>\n"
+            f"2. Sohbet Grubumuz",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
@@ -109,8 +129,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton("Satın Al", callback_data="satinal")  
         ]]  
         await query.message.edit_text(  
-            "Ayık Ol Botuna hoş geldiniz.\n"  
-            "Aşağıdaki menüden seçeneği seçebilirsiniz.",  
+            "Ayık Ol Botunun ana menüsüne hoş geldiniz.\n"  
+            "Aşağıdaki seçenekten devam edebilirsiniz.",  
             reply_markup=InlineKeyboardMarkup(keyboard)  
         )
 
@@ -212,7 +232,6 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("sure", sure))  
     app.add_handler(CallbackQueryHandler(handle_callback))  
     
-    # Telegram Stars ödeme altyapısı
     app.add_handler(PreCheckoutQueryHandler(pre_checkout_handler))
     app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_handler))
 
