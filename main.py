@@ -8,12 +8,9 @@ from telegram.error import BadRequest
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
 
-# 1. Ana Grup/Kanal ID ve Davet Linki
-CHANNEL_ID = -1004359957079
-CHANNEL_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0"
-
-# 2. İkinci Zorunlu Kanal
-SECOND_CHANNEL = "@ayikolguven"
+# Zorunlu Olacak Yerler
+CHANNEL_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0" # 1. Zorunlu Grup Davet Linki
+SECOND_CHANNEL = "@baileyssohbet"                     # 2. Zorunlu Kanal
 
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
@@ -31,15 +28,11 @@ sureler = {
 
 async def check_memberships(user_id, bot):
     try:
-        # Ana grup/kanal kontrolü
-        member1 = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        is_member1 = member1.status in ['member', 'creator', 'administrator']
-        
-        # İkinci kanal kontrolü (@ayikolguven)
+        # 1. Kanal (@baileyssohbet) üyelik kontrolü
         member2 = await bot.get_chat_member(chat_id=SECOND_CHANNEL, user_id=user_id)
         is_member2 = member2.status in ['member', 'creator', 'administrator']
 
-        return is_member1 and is_member2
+        return is_member2
     except BadRequest:
         return False
 
@@ -50,10 +43,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await check_memberships(user.id, context.bot):  
         keyboard = [
             [InlineKeyboardButton("1. Gruba Katıl", url=CHANNEL_INVITE_LINK)],
-            [InlineKeyboardButton("2. Kanala Katıl (@ayikolguven)", url=f"https://t.me/{SECOND_CHANNEL[1:]}")]
+            [InlineKeyboardButton("2. Kanala Katıl (@baileyssohbet)", url=f"https://t.me/{SECOND_CHANNEL[1:]}")]
         ]  
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce **her iki gruba da** katılmalısın.",  
+            f"Selam {kullanici_adi}, botu kullanabilmek için önce **belirtilen iki yere de** katılmalısın.",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
@@ -149,97 +142,4 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     while True:  
         sifre = ''.join(random.choices(string.digits, k=6))  
         if sifre not in kullanilmis_sifreler:  
-            kullanilmis_sifreler.add(sifre)  
-            break  
-
-    if sure_gun is None:  
-        kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
-    else:  
-        bitis = datetime.now() + timedelta(days=sure_gun)  
-        kullanicilar[uid] = {"bitis": bitis, "sifre": sifre}  
-
-    link = f"{LINK_BASE}{uid}&sifre={sifre}"  
-    username = f"@{user.username}" if user.username else user.first_name  
-    zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
-
-    kanal_mesaj = (  
-        f"✅ Yeni Satın Alma Onayı (Stars)\n"  
-        f"Kullanıcı: {username}\n"  
-        f"Paket: {secim}\n"  
-        f"Süre: {sure_gun if sure_gun is not None else 'Sınırsız'} gün\n"  
-        f"Tarih: {zaman}"  
-    )  
-    try:
-        await context.bot.send_message(chat_id=CHANNEL_ID, text=kanal_mesaj)  
-    except Exception:
-        pass
-
-    await update.message.reply_text(  
-        f"✅ Satın alma işleminiz onaylandı!\n\n"  
-        f"🔗 Link: {link}\n"  
-        f"🔐 Şifre: {sifre}\n\n"  
-        f"/link → tekrar almak için\n"  
-        f"/sure → süreyi görmek için"  
-    )
-
-async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    if uid not in kullanicilar:
-        await update.message.reply_text("Satın alma yapmadığınız tespit edildi.")
-        return
-
-    veri = kullanicilar[uid]  
-    bitis = veri["bitis"]  
-    sifre = veri["sifre"]  
-
-    if bitis is not None and datetime.now() > bitis:  
-        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
-        return  
-
-    link = f"{LINK_BASE}{uid}&sifre={sifre}"  
-    await update.message.reply_text(f"🔗 Kişisel bağlantınız: {link}")
-
-async def sure(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    if uid not in kullanicilar:
-        await update.message.reply_text("Satın alma işlemi bulunamadı.")
-        return
-
-    bitis = kullanicilar[uid]["bitis"]  
-    if bitis is None:  
-        await update.message.reply_text("Kullanım süreniz: Sınırsız")  
-        return  
-
-    kalan = bitis - datetime.now()  
-    if kalan.total_seconds() < 0:  
-        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
-        return  
-
-    await update.message.reply_text(f"Kalan kullanım süreniz: {kalan.days} gün")
-
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()  
-
-    app.add_handler(CommandHandler("start", start))  
-    app.add_handler(CommandHandler("link", link))  
-    app.add_handler(CommandHandler("sure", sure))  
-    app.add_handler(CallbackQueryHandler(handle_callback))  
-    
-    app.add_handler(PreCheckoutQueryHandler(pre_checkout_handler))
-    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_handler))
-
-    # Komut menüsünü otomatik ayarlama
-    async def post_init(application):
-        await application.bot.set_my_commands([  
-            BotCommand("start", "Bota başla"),  
-            BotCommand("link", "Kişisel giriş bağlantını al"),  
-            BotCommand("sure", "Kullanım süresini görüntüle")  
-        ])
-
-    app.post_init = post_init
-
-    print("Bot çalıştırılıyor...")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+            
