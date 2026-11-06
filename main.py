@@ -8,11 +8,7 @@ from telegram.error import BadRequest
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
 
-# Zorunlu Olacak Yerler:
-# 1. Baileys Gizli Grubu (Davet Linki üzerinden katılım)
 BAILEYS_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0" 
-
-# 2. Ayık Ol Güven Kanalı (Kullanıcı Adı üzerinden üyelik kontrolü)
 AYIKOL_CHANNEL = "@ayikolguven"
 
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
@@ -20,7 +16,6 @@ LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 kullanicilar = {}
 kullanilmis_sifreler = set()
 
-# Paketler ve Yıldız fiyatları
 sureler = {
     "1 Aylık - 100 TL": {"gun": 30, "fiyat": 100},
     "3 Aylık - 250 TL": {"gun": 90, "fiyat": 250},
@@ -100,7 +95,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         title = f"Ayık Ol - {secim}"
         description = f"Ayık Ol sistemi için {secim} kullanım hakkı."
         payload = f"paketsatinal_{secim}"
-        currency = "XTR" # Telegram Stars
+        currency = "XTR" 
         prices = [LabeledPrice(secim, paket_bilgi["fiyat"])]
 
         await context.bot.send_invoice(
@@ -153,7 +148,77 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
 
     link = f"{LINK_BASE}{uid}&sifre={sifre}"  
     username = f"@{user.username}" if user.username else user.first_name  
-    zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
 
     try:
-        await context.bot.send_message(chat_id=ADMIN_ID, text
+        await context.bot.send_message(chat_id=ADMIN_ID, text=f"✅ Yeni Satın Alma:\nKullanıcı: {username}\nPaket: {secim}")  
+    except Exception:
+        pass
+
+    await update.message.reply_text(  
+        f"✅ Satın alma işleminiz onaylandı!\n\n"  
+        f"🔗 Link: {link}\n"  
+        f"🔐 Şifre: {sifre}\n\n"  
+        f"/link → tekrar almak için\n"  
+        f"/sure → süreyi görmek için"  
+    )
+
+async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    if uid not in kullanicilar:
+        await update.message.reply_text("Satın alma yapmadığınız tespit edildi.")
+        return
+
+    veri = kullanicilar[uid]  
+    bitis = veri["bitis"]  
+    sifre = veri["sifre"]  
+
+    if bitis is not None and datetime.now() > bitis:  
+        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
+        return  
+
+    link = f"{LINK_BASE}{uid}&sifre={sifre}"  
+    await update.message.reply_text(f"🔗 Kişisel bağlantınız: {link}")
+
+async def sure(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    if uid not in kullanicilar:
+        await update.message.reply_text("Satın alma işlemi bulunamadı.")
+        return
+
+    bitis = kullanicilar[uid]["bitis"]  
+    if bitis is None:  
+        await update.message.reply_text("Kullanım süreniz: Sınırsız")  
+        return  
+
+    kalan = bitis - datetime.now()  
+    if kalan.total_seconds() < 0:  
+        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
+        return  
+
+    await update.message.reply_text(f"Kalan kullanım süreniz: {kalan.days} gün")
+
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()  
+
+    app.add_handler(CommandHandler("start", start))  
+    app.add_handler(CommandHandler("link", link))  
+    app.add_handler(CommandHandler("sure", sure))  
+    app.add_handler(CallbackQueryHandler(handle_callback))  
+    
+    app.add_handler(PreCheckoutQueryHandler(pre_checkout_handler))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_handler))
+
+    async def post_init(application):
+        await application.bot.set_my_commands([  
+            BotCommand("start", "Bota başla"),  
+            BotCommand("link", "Kişisel giriş bağlantını al"),  
+            BotCommand("sure", "Kullanım süresini görüntüle")  
+        ])
+
+    app.post_init = post_init
+
+    print("Bot çalıştırılıyor...")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
