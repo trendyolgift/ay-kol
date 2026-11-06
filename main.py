@@ -9,9 +9,12 @@ from telegram.error import BadRequest
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
 
-# Belirttiğiniz Kanal/Grup ID ve Davet Linki
+# 1. Ana Grup/Kanal ID ve Davet Linki
 CHANNEL_ID = -1004359957079
 CHANNEL_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0"
+
+# 2. İkinci Zorunlu Kanal (Kullanıcı Adı veya ID'si)
+SECOND_CHANNEL = "@ayikolguven"
 
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
@@ -27,10 +30,17 @@ sureler = {
     "Sınırsız - 600 TL": {"gun": None, "fiyat": 600}
 }
 
-async def check_channel_membership(user_id, bot):
+async def check_memberships(user_id, bot):
     try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        return member.status in ['member', 'creator', 'administrator']
+        # Ana grup/kanal kontrolü
+        member1 = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
+        is_member1 = member1.status in ['member', 'creator', 'administrator']
+        
+        # İkinci kanal kontrolü (@ayikolguven)
+        member2 = await bot.get_chat_member(chat_id=SECOND_CHANNEL, user_id=user_id)
+        is_member2 = member2.status in ['member', 'creator', 'administrator']
+
+        return is_member1 and is_member2
     except BadRequest:
         return False
 
@@ -38,10 +48,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     kullanici_adi = user.mention_html() if user.username else user.first_name
 
-    if not await check_channel_membership(user.id, context.bot):  
-        keyboard = [[InlineKeyboardButton("Gruba Katıl", url=CHANNEL_INVITE_LINK)]]  
+    if not await check_memberships(user.id, context.bot):  
+        keyboard = [
+            [InlineKeyboardButton("1. Gruba Katıl", url=CHANNEL_INVITE_LINK)],
+            [InlineKeyboardButton("2. Kanala Katıl (@ayikolguven)", url=f"https://t.me/{SECOND_CHANNEL[1:]}")]
+        ]  
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce grubumuza katılmalısın.",  
+            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce **her iki gruba da** katılmalısın.",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
