@@ -1,5 +1,5 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, LabeledPrice
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, PreCheckoutQueryHandler, ContextTypes
 from datetime import datetime, timedelta
 import random
 import string
@@ -7,20 +7,20 @@ import asyncio
 from telegram.error import BadRequest
 
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
-ADMIN_ID = '8788829431'
-CHANNEL_USERNAME = '@ayykol'
+ADMIN_ID = 8788829431
+CHANNEL_USERNAME = '@ayikolguven'
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
 kullanicilar = {}
-secim_kayit = {}
 kullanilmis_sifreler = set()
 
+# Paketler ve Yıldız fiyatları (istediğin gibi değiştirebilirsin)
 sureler = {
-    "1 Aylık - 100 TL": 30,
-    "3 Aylık - 250 TL": 90,
-    "5 Aylık - 450 TL": 150,
-    "1 Yıllık - 800 TL": 365,
-    "Sınırsız - 600 TL": None
+    "1 Aylık - 100 TL": {"gun": 30, "fiyat": 100},
+    "3 Aylık - 250 TL": {"gun": 90, "fiyat": 250},
+    "5 Aylık - 450 TL": {"gun": 150, "fiyat": 450},
+    "1 Yıllık - 800 TL": {"gun": 365, "fiyat": 800},
+    "Sınırsız - 600 TL": {"gun": None, "fiyat": 600}
 }
 
 async def check_channel_membership(user_id, bot):
@@ -74,8 +74,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(mesaj, reply_markup=InlineKeyboardMarkup(keyboard))  
 
     elif query.data == "satinal":  
-        keyboard = [[InlineKeyboardButton(secenek, callback_data=f"odeme|{secenek}")] for secenek in sureler.keys()]  
+        keyboard = []
+        for secenek in sureler.keys():
+            keyboard.append([InlineKeyboardButton(secenek, callback_data=f"odeme|{secenek}")])
         keyboard.append([InlineKeyboardButton("Geri", callback_data="geri")])  
+        
         await query.message.edit_text(  
             "Satın almak istediğiniz paketi seçin:",  
             reply_markup=InlineKeyboardMarkup(keyboard)  
@@ -83,18 +86,22 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif query.data.startswith("odeme"):  
         secim = query.data.split("|")[1]  
-        keyboard = [[InlineKeyboardButton("Ödeme Yaptım", callback_data=f"gonder|{secim}")]  
-        await query.message.edit_text(  
-            f"Seçilen Paket: {secim}\n\n"  
-            "Lütfen ödemenizi aşağıdaki IBAN’a yapınız:\n\n"  
-            "IBAN: 1234567890\n\nLütfen ödeme ekran görüntüsünü bu sohbete gönderin.",  
-            reply_markup=InlineKeyboardMarkup(keyboard)  
-        )  
+        paket_bilgi = sureler[secim]
+        
+        title = f"Ayık Ol - {secim}"
+        description = f"Ayık Ol sistemi için {secim} kullanım hakkı."
+        payload = f"paketsatinal_{secim}"
+        currency = "XTR" # Telegram Stars
+        prices = [LabeledPrice(secim, paket_bilgi["fiyat"])]
 
-    elif query.data.startswith("gonder"):  
-        secim = query.data.split("|")[1]  
-        context.user_data["onay_bekleyen"] = secim  
-        await query.message.edit_text("📷 Ödeme ekran görüntüsünü bu sohbete gönderiniz.")  
+        await context.bot.send_invoice(
+            chat_id=query.message.chat_id,
+            title=title,
+            description=description,
+            payload=payload,
+            currency=currency,
+            prices=prices
+        )
 
     elif query.data == "geri":  
         keyboard = [[  
@@ -107,48 +114,21 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)  
         )
 
-async def foto_geldi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.message.from_user
-    if "onay_bekleyen" in context.user_data:
-        secim = context.user_data["onay_bekleyen"]
-        secim_kayit[user.id] = secim
+async def pre_checkout_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.pre_checkout_query
+    await query.answer(ok=True)
 
-        await context.bot.send_photo(  
-            chat_id=ADMIN_ID,  
-            photo=update.message.photo[-1].file_id,  
-            caption=(  
-                f"💸 Yeni Satın Alma Talebi\n"  
-                f"Kullanıcı: @{user.username or user.first_name}\n"  
-                f"ID: {user.id}\n"  
-                f"Paket: {secim}"  
-            ),  
-            parse_mode="HTML"  
-        )  
-        await update.message.reply_text(  
-            "📤 Talebiniz yöneticimize iletildi. Onaylandıktan sonra /link komutunu kullanabilirsiniz."  
-        )  
-        del context.user_data["onay_bekleyen"]
-
-async def onayla(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != int(ADMIN_ID):
+async def successful_payment_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    payment = update.message.successful_payment
+    payload = payment.invoice_payload
+    
+    if not payload.startswith("paketsatinal_"):
         return
 
-    if len(context.args) != 1:  
-        await update.message.reply_text("Kullanım: /onayla USER_ID")  
-        return  
-
-    try:  
-        user_id = int(context.args[0])  
-    except ValueError:  
-        await update.message.reply_text("Geçersiz kullanıcı ID'si.")  
-        return  
-
-    if user_id not in secim_kayit:  
-        await update.message.reply_text("Bu kullanıcıdan ödeme bilgisi alınmamış.")  
-        return  
-
-    secim = secim_kayit[user_id]  
-    sure_gun = sureler[secim]  
+    secim = payload.split("_")[1]
+    user = update.message.from_user
+    uid = user.id
+    sure_gun = sureler[secim]["gun"]
 
     while True:  
         sifre = ''.join(random.choices(string.digits, k=6))  
@@ -157,37 +137,34 @@ async def onayla(update: Update, context: ContextTypes.DEFAULT_TYPE):
             break  
 
     if sure_gun is None:  
-        kullanicilar[user_id] = {"bitis": None, "sifre": sifre}  
+        kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
     else:  
         bitis = datetime.now() + timedelta(days=sure_gun)  
-        kullanicilar[user_id] = {"bitis": bitis, "sifre": sifre}  
+        kullanicilar[uid] = {"bitis": bitis, "sifre": sifre}  
 
-    link = f"{LINK_BASE}{user_id}&sifre={sifre}"  
-
-    user = await context.bot.get_chat(user_id)  
+    link = f"{LINK_BASE}{uid}&sifre={sifre}"  
     username = f"@{user.username}" if user.username else user.first_name  
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
 
     kanal_mesaj = (  
-        f"✅ Yeni Satın Alma Onayı\n"  
+        f"✅ Yeni Satın Alma Onayı (Stars)\n"  
         f"Kullanıcı: {username}\n"  
         f"Paket: {secim}\n"  
         f"Süre: {sure_gun if sure_gun is not None else 'Sınırsız'} gün\n"  
         f"Tarih: {zaman}"  
     )  
-    await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=kanal_mesaj)  
+    try:
+        await context.bot.send_message(chat_id=CHANNEL_USERNAME, text=kanal_mesaj)  
+    except Exception:
+        pass
 
-    await context.bot.send_message(  
-        chat_id=user_id,  
-        text=(  
-            f"✅ Satın alma işleminiz onaylandı!\n\n"  
-            f"🔗 Link: {link}\n"  
-            f"🔐 Şifre: {sifre}\n\n"  
-            f"/link → tekrar almak için\n"  
-            f"/sure → süreyi görmek için"  
-        )  
-    )  
-    await update.message.reply_text("Kullanıcı başarıyla onaylandı.")
+    await update.message.reply_text(  
+        f"✅ Satın alma işleminiz onaylandı!\n\n"  
+        f"🔗 Link: {link}\n"  
+        f"🔐 Şifre: {sifre}\n\n"  
+        f"/link → tekrar almak için\n"  
+        f"/sure → süreyi görmek için"  
+    )
 
 async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -231,11 +208,13 @@ if __name__ == "__main__":
     app = ApplicationBuilder().token(TOKEN).build()  
 
     app.add_handler(CommandHandler("start", start))  
-    app.add_handler(CommandHandler("onayla", onayla))  
     app.add_handler(CommandHandler("link", link))  
     app.add_handler(CommandHandler("sure", sure))  
-    app.add_handler(MessageHandler(filters.PHOTO, foto_geldi))  
     app.add_handler(CallbackQueryHandler(handle_callback))  
+    
+    # Telegram Stars ödeme altyapısı
+    app.add_handler(PreCheckoutQueryHandler(pre_checkout_handler))
+    app.add_handler(MessageHandler(filters.SUCCESSFUL_PAYMENT, successful_payment_handler))
 
     async def set_commands():  
         await app.bot.set_my_commands([  
@@ -246,4 +225,3 @@ if __name__ == "__main__":
 
     loop.run_until_complete(set_commands())  
     app.run_polling()
-
