@@ -8,9 +8,12 @@ from telegram.error import BadRequest
 TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
 ADMIN_ID = 8788829431
 
-# Zorunlu Olacak Yerler
-CHANNEL_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0" # 1. Zorunlu Grup Davet Linki
-SECOND_CHANNEL = "@baileyssohbet"                     # 2. Zorunlu Kanal
+# Zorunlu Olacak Yerler:
+# 1. Baileys Gizli Grubu (Davet Linki üzerinden katılım)
+BAILEYS_INVITE_LINK = "https://t.me/+cOy4YK8nRJA2NWU0" 
+
+# 2. Ayık Ol Güven Kanalı (Kullanıcı Adı üzerinden üyelik kontrolü)
+AYIKOL_CHANNEL = "@ayikolguven"
 
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
@@ -28,11 +31,9 @@ sureler = {
 
 async def check_memberships(user_id, bot):
     try:
-        # 1. Kanal (@baileyssohbet) üyelik kontrolü
-        member2 = await bot.get_chat_member(chat_id=SECOND_CHANNEL, user_id=user_id)
-        is_member2 = member2.status in ['member', 'creator', 'administrator']
-
-        return is_member2
+        # Sadece @ayikolguven kanalındaki üyeliği sorguluyoruz (Gizli gruba davet linkiyle girdikleri için API üzerinden direkt sorgulanamaz, o yüzden burası kontrol edilir)
+        member = await bot.get_chat_member(chat_id=AYIKOL_CHANNEL, user_id=user_id)
+        return member.status in ['member', 'creator', 'administrator']
     except BadRequest:
         return False
 
@@ -42,11 +43,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not await check_memberships(user.id, context.bot):  
         keyboard = [
-            [InlineKeyboardButton("1. Gruba Katıl", url=CHANNEL_INVITE_LINK)],
-            [InlineKeyboardButton("2. Kanala Katıl (@baileyssohbet)", url=f"https://t.me/{SECOND_CHANNEL[1:]}")]
+            [InlineKeyboardButton("1. Baileys Grubuna Katıl", url=BAILEYS_INVITE_LINK)],
+            [InlineKeyboardButton("2. Ayık Ol Güven Kanalına Katıl", url=f"https://t.me/{AYIKOL_CHANNEL[1:]}")]
         ]  
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, botu kullanabilmek için önce **belirtilen iki yere de** katılmalısın.",  
+            f"Selam {kullanici_adi}, botu kullanabilmek için önce **belirtilen gruba ve kanala** katılmalısın.",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
@@ -142,4 +143,24 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     while True:  
         sifre = ''.join(random.choices(string.digits, k=6))  
         if sifre not in kullanilmis_sifreler:  
-            
+            kullanilmis_sifreler.add(sifre)  
+            break  
+
+    if sure_gun is None:  
+        kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
+    else:  
+        bitis = datetime.now() + timedelta(days=sure_gun)  
+        kullanicilar[uid] = {"bitis": bitis, "sifre": sifre}  
+
+    link = f"{LINK_BASE}{uid}&sifre={sifre}"  
+    username = f"@{user.username}" if user.username else user.first_name  
+    zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
+
+    try:
+        await context.bot.send_message(chat_id=ADMIN_ID, text=f"✅ Yeni Satın Alma:\nKullanıcı: {username}\nPaket: {secim}")  
+    except Exception:
+        pass
+
+    await update.message.reply_text(  
+        f"✅ Satın alma işleminiz onaylandı!\n\n"  
+        f"🔗 Link: {link}\
