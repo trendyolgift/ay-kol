@@ -114,7 +114,6 @@ async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(fmt(messages["mute"], user))
 
-    # SLEEP YOK → JOB SYSTEM
     if seconds:
         context.job_queue.run_once(
             unmute_job,
