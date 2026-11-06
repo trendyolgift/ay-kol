@@ -24,7 +24,8 @@ messages = {
 def is_admin(uid: int):
     return uid in ADMINS
 
-def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ---------------- GET USER (ASYNC FIX) ----------------
+async def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = update.message
 
     if msg and msg.reply_to_message:
@@ -33,17 +34,21 @@ def get_user(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
         arg = context.args[0]
 
+        # Kullanıcı ID ile arama
         if arg.isdigit():
             try:
-                return context.bot.get_chat_member(update.effective_chat.id, int(arg)).user
-            except:
+                member = await context.bot.get_chat_member(update.effective_chat.id, int(arg))
+                return member.user
+            except Exception:
                 return None
 
+        # Kullanıcı adı (@username) ile arama
         if arg.startswith("@"):
             try:
-                chat = context.bot.get_chat(arg)
-                return context.bot.get_chat_member(update.effective_chat.id, chat.id).user
-            except:
+                chat = await context.bot.get_chat(arg)
+                member = await context.bot.get_chat_member(update.effective_chat.id, chat.id)
+                return member.user
+            except Exception:
                 return None
 
     return None
@@ -73,7 +78,7 @@ def parse_duration(text: str):
 
     return None
 
-# ---------------- UNMUTE JOB (HIZLI SİSTEM) ----------------
+# ---------------- UNMUTE JOB ----------------
 async def unmute_job(context: ContextTypes.DEFAULT_TYPE):
     job = context.job
     chat_id = job.data["chat_id"]
@@ -84,18 +89,24 @@ async def unmute_job(context: ContextTypes.DEFAULT_TYPE):
         user_id,
         ChatPermissions(
             can_send_messages=True,
-            can_send_media_messages=True,
+            can_send_audios=True,
+            can_send_documents=True,
+            can_send_photos=True,
+            can_send_videos=True,
+            can_send_video_notes=True,
+            can_send_voice_notes=True,
+            can_send_polls=True,
             can_send_other_messages=True,
             can_add_web_page_previews=True
         )
     )
 
-# ---------------- MUTE (HIZLANDIRILDI) ----------------
+# ---------------- MUTE ----------------
 async def mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
@@ -129,41 +140,50 @@ async def kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
+    # Kullanıcıyı gruptan atıp hemen banını kaldırıyoruz ki tekrar katılabilsin
     await context.bot.ban_chat_member(update.effective_chat.id, user.id)
-    await context.bot.unban_chat_member(update.effective_chat.id, user.id)
+    await context.bot.unban_chat_member(update.effective_chat.id, user.id, only_if_banned=True)
+    await update.message.reply_text(fmt(messages["kick"], user))
 
 # ---------------- BAN ----------------
 async def ban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
     await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+    await update.message.reply_text(fmt(messages["ban"], user))
 
-# ---------------- UNBAN ----------------
+# ---------------- UNBAN (DÜZELTİLDİ) ----------------
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
-    await context.bot.unban_chat_member(update.effective_chat.id, user.id)
+    # only_if_banned=True parametresi banın sorunsuz kalkmasını sağlar
+    await context.bot.unban_chat_member(
+        chat_id=update.effective_chat.id, 
+        user_id=user.id, 
+        only_if_banned=True
+    )
+    await update.message.reply_text(fmt(messages["unban"], user))
 
 # ---------------- WARN ----------------
 async def warn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
@@ -189,13 +209,13 @@ async def warns_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
     w = warns.get(user.id, 0)
     await update.message.reply_text(
-        messages["warns_info"].replace("{count}", str(w))
+        fmt(messages["warns_info"], user).replace("{count}", str(w))
     )
 
 # ---------------- CLEARWARN ----------------
@@ -203,12 +223,12 @@ async def clearwarn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return
 
-    user = get_user(update, context)
+    user = await get_user(update, context)
     if not user:
         return
 
     warns[user.id] = 0
-    await update.message.reply_text(messages["clearwarn_done"])
+    await update.message.reply_text(fmt(messages["clearwarn_done"], user))
 
 # ---------------- KELİME YAKALAMA (BEACH / KUMSAL) ----------------
 async def keyword_response(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -228,7 +248,6 @@ app.add_handler(CommandHandler("warn", warn))
 app.add_handler(CommandHandler("warns", warns_cmd))
 app.add_handler(CommandHandler("clearwarn", clearwarn))
 
-# Mesajları tarayıp kelimeleri yakalayan handler
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, keyword_response))
 
 print("bot hızlı mode aktif")
