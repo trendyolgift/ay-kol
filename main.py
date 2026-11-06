@@ -31,7 +31,6 @@ sureler = {
 
 async def check_memberships(user_id, bot):
     try:
-        # Sadece @ayikolguven kanalındaki üyeliği sorguluyoruz (Gizli gruba davet linkiyle girdikleri için API üzerinden direkt sorgulanamaz, o yüzden burası kontrol edilir)
         member = await bot.get_chat_member(chat_id=AYIKOL_CHANNEL, user_id=user_id)
         return member.status in ['member', 'creator', 'administrator']
     except BadRequest:
@@ -157,10 +156,4 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
 
     try:
-        await context.bot.send_message(chat_id=ADMIN_ID, text=f"✅ Yeni Satın Alma:\nKullanıcı: {username}\nPaket: {secim}")  
-    except Exception:
-        pass
-
-    await update.message.reply_text(  
-        f"✅ Satın alma işleminiz onaylandı!\n\n"  
-        f"🔗 Link: {link}\
+        await context.bot.send_message(chat_id=ADMIN_ID, text
