@@ -14,13 +14,13 @@ LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 kullanicilar = {}
 kullanilmis_sifreler = set()
 
-# Paketler ve Yıldız fiyatları (istediğin gibi değiştirebilirsin)
+# Paketler ve Telegram Stars (XTR) fiyatları
 sureler = {
-    "1 Aylık - 100 TL": {"gun": 30, "fiyat": 100},
-    "3 Aylık - 250 TL": {"gun": 90, "fiyat": 250},
-    "5 Aylık - 450 TL": {"gun": 150, "fiyat": 450},
-    "1 Yıllık - 800 TL": {"gun": 365, "fiyat": 800},
-    "Sınırsız - 600 TL": {"gun": None, "fiyat": 600}
+    "1 Aylık - 50 ⭐": {"gun": 30, "fiyat": 50},
+    "3 Aylık - 120 ⭐": {"gun": 90, "fiyat": 120},
+    "5 Aylık - 200 ⭐": {"gun": 150, "fiyat": 200},
+    "1 Yıllık - 350 ⭐": {"gun": 365, "fiyat": 350},
+    "Sınırsız - 500 ⭐": {"gun": None, "fiyat": 500}
 }
 
 async def check_channel_membership(user_id, bot):
@@ -80,7 +80,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         keyboard.append([InlineKeyboardButton("Geri", callback_data="geri")])  
         
         await query.message.edit_text(  
-            "Satın almak istediğiniz paketi seçin:",  
+            "Satın almak istediğiniz paketi seçin (Telegram Yıldızları ile ödeme yapılır):",  
             reply_markup=InlineKeyboardMarkup(keyboard)  
         )  
 
