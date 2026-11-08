@@ -14,14 +14,10 @@ LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 kullanicilar = {}
 kullanilmis_sifreler = set()
 
-# Paketler ve Telegram Stars (XTR) fiyatları
-sureler = {
-    "1 Aylık - 50 ⭐": {"gun": 30, "fiyat": 50},
-    "3 Aylık - 120 ⭐": {"gun": 90, "fiyat": 120},
-    "5 Aylık - 200 ⭐": {"gun": 150, "fiyat": 200},
-    "1 Yıllık - 350 ⭐": {"gun": 365, "fiyat": 350},
-    "Sınırsız - 500 ⭐": {"gun": None, "fiyat": 500}
-}
+# Tek Paket Bilgisi (400 Telegram Yıldızı)
+PAKET_ADI = "Sınırsız Tam Erişim - 400 ⭐"
+YILDIZ_FIYATI = 400
+SURE_GUN = None  # Sınırsız (İsterseniz gün sayısı yazabilirsiniz)
 
 async def check_channel_membership(user_id, bot):
     try:
@@ -45,7 +41,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [[  
         InlineKeyboardButton("Web Sitesi Nasıl Çalışır?", callback_data="sistem"),  
-        InlineKeyboardButton("Satın Al", callback_data="satinal")  
+        InlineKeyboardButton("Satın Al (400 ⭐)", callback_data="satinal")  
     ]]  
     await update.message.reply_html(  
         f"Merhaba {kullanici_adi}, Ayık Ol Botuna hoş geldiniz.\n"  
@@ -74,25 +70,12 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(mesaj, reply_markup=InlineKeyboardMarkup(keyboard))  
 
     elif query.data == "satinal":  
-        keyboard = []
-        for secenek in sureler.keys():
-            keyboard.append([InlineKeyboardButton(secenek, callback_data=f"odeme|{secenek}")])
-        keyboard.append([InlineKeyboardButton("Geri", callback_data="geri")])  
-        
-        await query.message.edit_text(  
-            "Satın almak istediğiniz paketi seçin (Telegram Yıldızları ile ödeme yapılır):",  
-            reply_markup=InlineKeyboardMarkup(keyboard)  
-        )  
-
-    elif query.data.startswith("odeme"):  
-        secim = query.data.split("|")[1]  
-        paket_bilgi = sureler[secim]
-        
-        title = f"Ayık Ol - {secim}"
-        description = f"Ayık Ol sistemi için {secim} kullanım hakkı."
-        payload = f"paketsatinal_{secim}"
-        currency = "XTR" # Telegram Stars
-        prices = [LabeledPrice(secim, paket_bilgi["fiyat"])]
+        # Telegram Stars faturası gönderilir
+        title = f"Ayık Ol - {PAKET_ADI}"
+        description = "Sistem için sınırsız kullanım hakkı (400 Yıldız)"
+        payload = "paketsatinal_sinirsiz"
+        currency = "XTR"  # Telegram Stars
+        prices = [LabeledPrice(PAKET_ADI, YILDIZ_FIYATI)]
 
         await context.bot.send_invoice(
             chat_id=query.message.chat_id,
@@ -106,7 +89,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "geri":  
         keyboard = [[  
             InlineKeyboardButton("Web Sitesi Nasıl Çalışır?", callback_data="sistem"),  
-            InlineKeyboardButton("Satın Al", callback_data="satinal")  
+            InlineKeyboardButton("Satın Al (400 ⭐)", callback_data="satinal")  
         ]]  
         await query.message.edit_text(  
             "Ayık Ol Botuna hoş geldiniz.\n"  
@@ -125,10 +108,8 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     if not payload.startswith("paketsatinal_"):
         return
 
-    secim = payload.split("_")[1]
     user = update.message.from_user
     uid = user.id
-    sure_gun = sureler[secim]["gun"]
 
     while True:  
         sifre = ''.join(random.choices(string.digits, k=6))  
@@ -136,10 +117,10 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
             kullanilmis_sifreler.add(sifre)  
             break  
 
-    if sure_gun is None:  
+    if SURE_GUN is None:  
         kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
     else:  
-        bitis = datetime.now() + timedelta(days=sure_gun)  
+        bitis = datetime.now() + timedelta(days=SURE_GUN)  
         kullanicilar[uid] = {"bitis": bitis, "sifre": sifre}  
 
     link = f"{LINK_BASE}{uid}&sifre={sifre}"  
@@ -147,10 +128,9 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
     zaman = datetime.now().strftime("%d.%m.%Y %H:%M:%S")  
 
     kanal_mesaj = (  
-        f"✅ Yeni Satın Alma Onayı (Stars)\n"  
+        f"✅ Yeni Satın Alma Onayı (400 Stars)\n"  
         f"Kullanıcı: {username}\n"  
-        f"Paket: {secim}\n"  
-        f"Süre: {sure_gun if sure_gun is not None else 'Sınırsız'} gün\n"  
+        f"Paket: {PAKET_ADI}\n"  
         f"Tarih: {zaman}"  
     )  
     try:
