@@ -1,39 +1,53 @@
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, BotCommand, LabeledPrice
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, CallbackQueryHandler, PreCheckoutQueryHandler, ContextTypes
-from datetime import datetime, timedelta
+from datetime import datetime
 import random
 import string
 import asyncio
 from telegram.error import BadRequest
 
-TOKEN = "9186950420:AAG8uPX7NKievzNPC9Ekje4tUN_MGObv4ZE"
+TOKEN = "9186950420:AAEr6kk-cY9IAYTxyLcW_Ogd7C5TpA1jKKo"
 ADMIN_ID = 8788829431
 CHANNEL_USERNAME = '@ayikolguven'
+GROUP_ID = -1004359957079  # Baileys Sohbet Grubu ID'si
 LINK_BASE = "https://trendyolgift.github.io/ay-kol/?chat="
 
 kullanicilar = {}
 kullanilmis_sifreler = set()
 
-# Tek Paket Bilgisi (400 Telegram Yıldızı)
+# Tek Paket Bilgisi (400 Yıldız)
 PAKET_ADI = "Sınırsız Tam Erişim - 400 ⭐"
 YILDIZ_FIYATI = 400
-SURE_GUN = None  # Sınırsız (İsterseniz gün sayısı yazabilirsiniz)
+SURE_GUN = None  # Sınırsız
 
-async def check_channel_membership(user_id, bot):
+async def check_membership(user_id, bot):
+    # 1. Kanala üyelik kontrolü
     try:
-        member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
-        return member.status in ['member', 'creator', 'administrator']
+        channel_member = await bot.get_chat_member(chat_id=CHANNEL_USERNAME, user_id=user_id)
+        in_channel = channel_member.status in ['member', 'creator', 'administrator']
     except BadRequest:
-        return False
+        in_channel = False
+
+    # 2. Baileys Sohbet Grubuna üyelik kontrolü
+    try:
+        group_member = await bot.get_chat_member(chat_id=GROUP_ID, user_id=user_id)
+        in_group = group_member.status in ['member', 'creator', 'administrator']
+    except BadRequest:
+        in_group = False
+
+    return in_channel and in_group
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     kullanici_adi = user.mention_html() if user.username else user.first_name
 
-    if not await check_channel_membership(user.id, context.bot):  
-        keyboard = [[InlineKeyboardButton("Kanala Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")]]  
+    if not await check_membership(user.id, context.bot):  
+        keyboard = [
+            [InlineKeyboardButton("Kanala Katıl", url=f"https://t.me/{CHANNEL_USERNAME[1:]}")],
+            [InlineKeyboardButton("Baileys Sohbet Grubuna Katıl", url="https://t.me/+baileyssohbet")]  # İsteğe göre grup davet linkini buraya yazabilirsin
+        ]  
         await update.message.reply_html(  
-            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a> kanalına katılmalısın.",  
+            f"Selam {kullanici_adi}, satın alma işlemlerine devam etmek için önce <a href='https://t.me/{CHANNEL_USERNAME[1:]}'>{CHANNEL_USERNAME}</a> kanalına ve **Baileys Sohbet** grubuna katılmalısın.",  
             reply_markup=InlineKeyboardMarkup(keyboard),  
             disable_web_page_preview=True  
         )  
@@ -70,21 +84,23 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(mesaj, reply_markup=InlineKeyboardMarkup(keyboard))  
 
     elif query.data == "satinal":  
-        # Telegram Stars faturası gönderilir
         title = f"Ayık Ol - {PAKET_ADI}"
         description = "Sistem için sınırsız kullanım hakkı (400 Yıldız)"
         payload = "paketsatinal_sinirsiz"
         currency = "XTR"  # Telegram Stars
-        prices = [LabeledPrice(PAKET_ADI, YILDIZ_FIYATI)]
+        prices = [LabeledPrice("Sınırsız Tam Erişim", YILDIZ_FIYATI)]
 
-        await context.bot.send_invoice(
-            chat_id=query.message.chat_id,
-            title=title,
-            description=description,
-            payload=payload,
-            currency=currency,
-            prices=prices
-        )
+        try:
+            await context.bot.send_invoice(
+                chat_id=query.message.chat_id,
+                title=title,
+                description=description,
+                payload=payload,
+                currency=currency,
+                prices=prices
+            )
+        except Exception as e:
+            await query.message.reply_text(f"Fatura gönderilirken bir hata oluştu: {e}")
 
     elif query.data == "geri":  
         keyboard = [[  
@@ -117,11 +133,7 @@ async def successful_payment_handler(update: Update, context: ContextTypes.DEFAU
             kullanilmis_sifreler.add(sifre)  
             break  
 
-    if SURE_GUN is None:  
-        kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
-    else:  
-        bitis = datetime.now() + timedelta(days=SURE_GUN)  
-        kullanicilar[uid] = {"bitis": bitis, "sifre": sifre}  
+    kullanicilar[uid] = {"bitis": None, "sifre": sifre}  
 
     link = f"{LINK_BASE}{uid}&sifre={sifre}"  
     username = f"@{user.username}" if user.username else user.first_name  
@@ -153,12 +165,7 @@ async def link(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     veri = kullanicilar[uid]  
-    bitis = veri["bitis"]  
     sifre = veri["sifre"]  
-
-    if bitis is not None and datetime.now() > bitis:  
-        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
-        return  
 
     link = f"{LINK_BASE}{uid}&sifre={sifre}"  
     await update.message.reply_text(f"🔗 Kişisel bağlantınız: {link}")
@@ -169,17 +176,7 @@ async def sure(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Satın alma işlemi bulunamadı.")
         return
 
-    bitis = kullanicilar[uid]["bitis"]  
-    if bitis is None:  
-        await update.message.reply_text("Kullanım süreniz: Sınırsız")  
-        return  
-
-    kalan = bitis - datetime.now()  
-    if kalan.total_seconds() < 0:  
-        await update.message.reply_text("❌ Kullanım süreniz dolmuş.")  
-        return  
-
-    await update.message.reply_text(f"Kalan kullanım süreniz: {kalan.days} gün")
+    await update.message.reply_text("Kullanım süreniz: Sınırsız (Tam Erişim)")
 
 if __name__ == "__main__":
     loop = asyncio.new_event_loop()
